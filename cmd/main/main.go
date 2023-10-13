@@ -14,7 +14,7 @@ func main() {
 
 	userRepository := repository.NewUserRepository(*db, "users")
 
-	user := models.User{FirstName: "test", LastName: "user", Email: "test@mail.ru"}
+	user := models.User{ID: 1, FirstName: "Denis", LastName: "Hohlov", Email: "den4ik@mail.ru"}
 
 	err := userRepository.Create(context.TODO(), &user)
 	if err != nil {
