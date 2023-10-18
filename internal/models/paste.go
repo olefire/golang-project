@@ -1,8 +1,14 @@
 package models
 
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gorm.io/gorm"
+)
+
 type Paste struct {
-	ID     int    `json:"item_id" ,db:"id"`
-	Title  string `json:"item_title" ,db:"title"`
-	Paste  string `json:"item_paste" ,db:"paste"`
-	Author *User  `json:"item_author" ,db:"author"`
+	gorm.Model
+	ID     primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Title  string             `json:"title" bson:"title" binding:"required"`
+	Paste  string             `json:"paste" bson:"paste" binding:"required"`
+	UserID primitive.ObjectID `json:"userID,omitempty" bson:"userID,omitempty"`
 }

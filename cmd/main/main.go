@@ -1,37 +1,26 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"go-testDB/internal/repository"
+	"github.com/rs/cors"
+	"log"
+	"mongoGo/internal/routes"
+	"mongoGo/pkg/middleware"
+	"net/http"
 )
 
 func main() {
-	client := repository.NewMongoDatabase()
-	defer repository.CloseMongoDBConnection(&client)
 
-	db := client.Database("test")
+	router := routes.Routes()
 
-	userRepository := repository.NewUserRepository(*db, "users")
+	c := cors.New(cors.Options{
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders: []string{"Content-Type", "Origin", "Accept", "*"},
+	})
 
-	//err := userRepository.Create(context.TODO(), &user)
-	//if err != nil {
-	//	return
-	//}
-
-	//users, err := userRepository.Fetch(context.TODO())
-	//if err != nil {
-	//	return
-	//}
-	//
-	//for _, user := range users {
-	//	fmt.Println(user)
-	//}
-
-	user, err := userRepository.GetByEmail(context.TODO(), "test@mail.ru")
+	handler := c.Handler(router)
+	err := http.ListenAndServe(":8080", middleware.LogRequest(handler))
 	if err != nil {
-		return
+		log.Fatalf("ListenAndServe: %v", err)
 	}
 
-	fmt.Println(user)
 }

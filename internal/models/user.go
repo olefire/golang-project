@@ -1,8 +1,13 @@
 package models
 
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gorm.io/gorm"
+)
+
 type User struct {
-	ID        int    `json:"id,omitempty"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
+	gorm.Model
+	ID    primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Name  string             `json:"name" bson:"name" binding:"required"`
+	Email string             `json:"email" bson:"email" binding:"email,required"`
 }
