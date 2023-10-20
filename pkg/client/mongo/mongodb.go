@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-func NewMongoDatabase() (error, *mongo.Client) {
+func NewMongoDatabase() (*mongo.Client, error) {
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017/")
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 
@@ -18,7 +18,7 @@ func NewMongoDatabase() (error, *mongo.Client) {
 	}
 
 	fmt.Println("Connected to MongoDB!")
-	return err, client
+	return client, err
 }
 
 func CloseMongoDBConnection(ctx context.Context, client *mongo.Client) {

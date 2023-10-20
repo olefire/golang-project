@@ -13,7 +13,7 @@ type errData struct {
 
 // AuthorizationResponse -> response authorize
 func AuthorizationResponse(msg string, writer http.ResponseWriter) {
-	temp := &errData{StatusCode: 401, Message: msg}
+	temp := &errData{StatusCode: http.StatusUnauthorized, Message: msg}
 
 	//Send header, status code and output to writer
 	writer.Header().Set("Content-Type", "application/json")
@@ -28,6 +28,9 @@ func AuthorizationResponse(msg string, writer http.ResponseWriter) {
 func SuccessArrRespond(fields []*models.User, writer http.ResponseWriter) {
 	// var fields["status"] := "success"
 	_, err := json.Marshal(fields)
+	if err != nil {
+		return
+	}
 	type data struct {
 		People     []*models.User `json:"data"`
 		StatusCode int            `json:"status"`

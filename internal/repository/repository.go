@@ -8,16 +8,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"mongoGo/internal/models"
+	"mongoGo/internal/services"
 )
 
 type UserRepository struct {
-	database   mongo.Database
+	database   *mongo.Database
 	collection string
 }
 
+var _ services.Repository = (*UserRepository)(nil)
+
 func NewUserRepository(db *mongo.Database, collection string) *UserRepository {
 	return &UserRepository{
-		database:   *db,
+		database:   db,
 		collection: collection,
 	}
 }
