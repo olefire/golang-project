@@ -1,26 +1,28 @@
 package main
 
 import (
+	"context"
 	"github.com/rs/cors"
 	"log"
 	"mongoGo/internal/repository"
 	"mongoGo/internal/routes"
 	"mongoGo/internal/services"
 	"mongoGo/pkg/client/mongo"
+	"mongoGo/pkg/handlers"
 	"mongoGo/pkg/middleware"
 	"net/http"
 )
 
 func main() {
-
 	client, err := mongo.NewMongoDatabase()
 	if err != nil {
 		log.Fatalf("Failed connect to database: %v", err)
 	}
+	defer mongo.CloseMongoDBConnection(context.Background(), client)
 
-	db := client.Database("golang")
+	db := client.Database(handlers.DotEnvVariable("DATABASE"))
 
-	repo := repository.NewUserRepository(db, "users")
+	repo := repository.NewUserRepository(db, handlers.DotEnvVariable("COLLECTION"))
 
 	service := services.NewService(services.Deps{
 		Repo: repo,

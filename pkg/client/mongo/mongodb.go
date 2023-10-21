@@ -6,10 +6,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"mongoGo/pkg/handlers"
 )
 
 func NewMongoDatabase() (*mongo.Client, error) {
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017/")
+	clientOptions := options.Client().ApplyURI(handlers.DotEnvVariable("MONGO_URL"))
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 
 	err = client.Ping(context.TODO(), nil)
