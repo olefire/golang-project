@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,19 +24,15 @@ func NewUserRepository(db *mongo.Database, collection string) *UserRepository {
 	}
 }
 
-func (ur *UserRepository) Create(c context.Context, user *models.User) error {
+func (ur *UserRepository) CreateUser(c context.Context, user *models.User) error {
 	collection := ur.database.Collection(ur.collection)
 
-	insertResult, err := collection.InsertOne(c, user)
-
-	if err == nil {
-		fmt.Println("Inserted a single document: ", insertResult.InsertedID)
-	}
+	_, err := collection.InsertOne(c, user)
 
 	return err
 }
 
-func (ur *UserRepository) Fetch(c context.Context) ([]models.User, error) {
+func (ur *UserRepository) GetUsers(c context.Context) ([]models.User, error) {
 	collection := ur.database.Collection(ur.collection)
 
 	opts := options.Find()
@@ -58,19 +53,19 @@ func (ur *UserRepository) Fetch(c context.Context) ([]models.User, error) {
 	return users, err
 }
 
-func (ur *UserRepository) GetByEmail(c context.Context, email string) (models.User, error) {
+func (ur *UserRepository) GetByEmail(c context.Context, email string) (*models.User, error) {
 	collection := ur.database.Collection(ur.collection)
 
-	var user models.User
+	var user *models.User
 
-	err := collection.FindOne(c, bson.M{"email": email}).Decode(&user)
+	err := collection.FindOne(c, bson.M{"email": email}).Decode(user)
 	return user, err
 }
 
-func (ur *UserRepository) GetByID(c context.Context, id string) (models.User, error) {
+func (ur *UserRepository) GetByID(c context.Context, id string) (*models.User, error) {
 	collection := ur.database.Collection(ur.collection)
 
-	var user models.User
+	var user *models.User
 
 	idHex, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

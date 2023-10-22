@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -9,28 +10,31 @@ import (
 	"mongoGo/pkg/handlers"
 )
 
-func NewMongoDatabase() (*mongo.Client, error) {
+func NewMongoDatabase(ctx context.Context) (*mongo.Client, error) {
 	clientOptions := options.Client().ApplyURI(handlers.DotEnvVariable("MONGO_URL"))
-	client, err := mongo.Connect(context.TODO(), clientOptions)
-
-	err = client.Ping(context.TODO(), nil)
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
+	}
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	fmt.Println("Connected to MongoDB!")
 	return client, err
 }
 
-func CloseMongoDBConnection(ctx context.Context, client *mongo.Client) {
+func CloseMongoDBConnection(ctx context.Context, client *mongo.Client) error {
 	if client == nil {
-		return
+		return errors.New("client is nil")
 	}
 
 	err := client.Disconnect(ctx)
-	if err != nil {
-		log.Fatal(err)
+	if err == nil {
+		log.Println("Connection to MongoDB closed.")
 	}
 
-	log.Println("Connection to MongoDB closed.")
+	return err
 }
