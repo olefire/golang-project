@@ -25,7 +25,7 @@ func (ctr *Controller) CreateUserEndpoint(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "", http.StatusNotFound)
+		http.Error(w, "", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -35,7 +35,7 @@ func (ctr *Controller) CreateUserEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := ctr.CreateUser(ctx, &req); err != nil {
+	if _, err := ctr.CreateUser(ctx, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -47,13 +47,14 @@ func (ctr *Controller) GetUsersEndpoint(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 
 	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusNotFound)
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
 		return
 	}
 
 	users, err := ctr.GetUsersInfo(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	SuccessArrRespond(users, w)

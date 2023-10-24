@@ -3,32 +3,38 @@ package main
 import (
 	"context"
 	"github.com/rs/cors"
-	mongo2 "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	controllerhttp "mongoGo/internal/controller/http"
 	"mongoGo/internal/repository"
 	"mongoGo/internal/services"
-	"mongoGo/pkg/client/mongo"
 	"mongoGo/pkg/handlers"
 	"mongoGo/pkg/middleware"
 	"net/http"
 )
 
 func main() {
-	client, err := mongo.NewMongoDatabase(context.Background())
+	ctx := context.Background()
+	clientOptions := options.Client().ApplyURI(handlers.DotEnvVariable("MONGO_URL"))
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		log.Fatalf("Failed connect to database: %v", err)
+		log.Fatal(err)
 	}
-	defer func(ctx context.Context, client *mongo2.Client) {
-		err := mongo.CloseMongoDBConnection(ctx, client)
-		if err != nil {
-			log.Fatalf("Database disconnect error")
+	if client.Ping(ctx, nil) != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if client.Disconnect(ctx) != nil {
+			log.Fatal(err)
 		}
-	}(context.Background(), client)
+	}()
 
 	db := client.Database(handlers.DotEnvVariable("DATABASE"))
 
-	repo := repository.NewUserRepository(db, handlers.DotEnvVariable("COLLECTION"))
+	collection := db.Collection(handlers.DotEnvVariable("COLLECTION"))
+
+	repo := repository.NewUserRepository(collection)
 
 	service := services.NewService(services.Deps{
 		Repo: repo,
