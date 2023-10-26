@@ -7,17 +7,23 @@ import (
 	"net/http"
 )
 
-type Services struct {
+type UserService struct {
 	services.UserManagement
 }
 
-type Controller struct {
-	Services
+type PasteService struct {
+	services.PasteManagement
 }
 
-func NewController(s Services) *Controller {
+type Controller struct {
+	UserService
+	PasteService
+}
+
+func NewController(us UserService, ps PasteService) *Controller {
 	return &Controller{
-		Services: s,
+		UserService:  us,
+		PasteService: ps,
 	}
 }
 
@@ -25,7 +31,7 @@ func (ctr *Controller) CreateUserEndpoint(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "", http.StatusMethodNotAllowed)
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -51,11 +57,50 @@ func (ctr *Controller) GetUsersEndpoint(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	users, err := ctr.GetUsersInfo(ctx)
+	users, err := ctr.GetUsers(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	SuccessArrRespond(users, w)
+}
+
+func (ctr *Controller) CreatePasteEndpoint(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.Paste
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if _, err := ctr.CreatePaste(ctx, &req); err != nil {
+		http.Error(w, "can`t create paste", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (ctr *Controller) GetBatchEndpoint(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	batch, err := ctr.GetBatch(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	SuccessBatchRespond(batch, w)
 }

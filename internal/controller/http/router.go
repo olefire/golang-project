@@ -10,5 +10,8 @@ func (ctr *Controller) NewRouter() http.Handler {
 	router.HandleFunc("/user", ctr.CreateUserEndpoint)
 	router.HandleFunc("/users", ctr.GetUsersEndpoint)
 
+	router.HandleFunc("/paste", ctr.CreatePasteEndpoint)
+	router.HandleFunc("/batch", ctr.GetBatchEndpoint)
+
 	return router
 }

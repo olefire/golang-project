@@ -14,7 +14,7 @@ type UserRepository struct {
 	collection *mongo.Collection
 }
 
-var _ services.Repository = (*UserRepository)(nil)
+var _ services.UserRepository = (*UserRepository)(nil)
 
 func NewUserRepository(col *mongo.Collection) *UserRepository {
 	return &UserRepository{

@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/caarlos0/env/v9 v9.0.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

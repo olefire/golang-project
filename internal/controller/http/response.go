@@ -1,4 +1,4 @@
-package middleware
+package http
 
 import (
 	"encoding/json"
@@ -11,34 +11,50 @@ type errData struct {
 	Message    string `json:"msg"`
 }
 
-// AuthorizationResponse -> response authorize
-func AuthorizationResponse(msg string, writer http.ResponseWriter) {
-	temp := &errData{StatusCode: http.StatusUnauthorized, Message: msg}
-
-	//Send header, status code and output to writer
-	writer.Header().Set("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusUnauthorized)
-	err := json.NewEncoder(writer).Encode(temp)
+func SuccessBatchRespond(batch []models.Paste, w http.ResponseWriter) {
+	_, err := json.Marshal(batch)
 	if err != nil {
-		return
-	}
-}
-
-// SuccessArrRespond -> response formatter
-func SuccessArrRespond(fields []*models.User, writer http.ResponseWriter) {
-	// var fields["status"] := "success"
-	_, err := json.Marshal(fields)
-	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	type data struct {
-		People     []*models.User `json:"data"`
+		Batch      []models.Paste `json:"data"`
 		StatusCode int            `json:"status"`
 		Message    string         `json:"msg"`
+	}
+	temp := &data{Batch: batch, StatusCode: http.StatusOK, Message: "success"}
+	if err != nil {
+		ServerErrResponse(err.Error(), w)
+	}
+
+	//Send header, status code and output to writer
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(temp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+}
+
+// SuccessArrRespond -> response formatter
+func SuccessArrRespond(fields []models.User, writer http.ResponseWriter) {
+	// var fields["status"] := "success"
+	_, err := json.Marshal(fields)
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
+		return
+	}
+	type data struct {
+		People     []models.User `json:"data"`
+		StatusCode int           `json:"status"`
+		Message    string        `json:"msg"`
 	}
 	temp := &data{People: fields, StatusCode: http.StatusOK, Message: "success"}
 	if err != nil {
 		ServerErrResponse(err.Error(), writer)
+		return
 	}
 
 	//Send header, status code and output to writer
@@ -46,6 +62,7 @@ func SuccessArrRespond(fields []*models.User, writer http.ResponseWriter) {
 	writer.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(writer).Encode(temp)
 	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
@@ -94,6 +111,7 @@ func ErrorResponse(error string, writer http.ResponseWriter) {
 	writer.WriteHeader(http.StatusBadRequest)
 	err := json.NewEncoder(writer).Encode(temp)
 	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
@@ -111,6 +129,7 @@ func ServerErrResponse(error string, writer http.ResponseWriter) {
 	writer.WriteHeader(http.StatusInternalServerError)
 	err := json.NewEncoder(writer).Encode(temp)
 	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
@@ -128,6 +147,7 @@ func ValidationResponse(fields map[string][]string, writer http.ResponseWriter) 
 	writer.WriteHeader(http.StatusUnprocessableEntity)
 	err := json.NewEncoder(writer).Encode(response)
 	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
 		return
 	}
 }

@@ -2,21 +2,31 @@ package main
 
 import (
 	"context"
+	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	controllerhttp "mongoGo/internal/controller/http"
-	"mongoGo/internal/repository"
+	PasteRepo "mongoGo/internal/repository/paste"
+	UserRepo "mongoGo/internal/repository/user"
 	"mongoGo/internal/services"
 	"mongoGo/pkg/handlers"
 	"mongoGo/pkg/middleware"
 	"net/http"
 )
 
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found")
+	}
+}
+
 func main() {
 	ctx := context.Background()
-	clientOptions := options.Client().ApplyURI(handlers.DotEnvVariable("MONGO_URL"))
+	cfg := handlers.NewConfig()
+
+	clientOptions := options.Client().ApplyURI(cfg.MongoURL)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		log.Fatal(err)
@@ -30,19 +40,21 @@ func main() {
 		}
 	}()
 
-	db := client.Database(handlers.DotEnvVariable("DATABASE"))
+	db := client.Database(cfg.Database)
 
-	collection := db.Collection(handlers.DotEnvVariable("COLLECTION"))
+	userCollection := db.Collection(cfg.UserCollection)
+	pasteCollection := db.Collection(cfg.PasteCollection)
 
-	repo := repository.NewUserRepository(collection)
+	userRepo := UserRepo.NewUserRepository(userCollection)
+	pasteRepo := PasteRepo.NewPasteRepository(pasteCollection)
 
 	service := services.NewService(services.Deps{
-		Repo: repo,
+		UserRepo:  userRepo,
+		PasteRepo: pasteRepo,
 	})
 
-	ctr := controllerhttp.NewController(controllerhttp.Services{
-		UserManagement: service,
-	})
+	ctr := controllerhttp.NewController(controllerhttp.UserService{UserManagement: service.UserRepo},
+		controllerhttp.PasteService{PasteManagement: service.PasteRepo})
 
 	router := ctr.NewRouter()
 
@@ -52,7 +64,7 @@ func main() {
 	})
 	handler := c.Handler(router)
 
-	err = http.ListenAndServe(":8080", middleware.LogRequest(handler))
+	err = http.ListenAndServe(cfg.Port, middleware.LogRequest(handler))
 	if err != nil {
 		log.Fatalf("ListenAndServe: %v", err)
 	}
