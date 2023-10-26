@@ -7,11 +7,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"mongoGo/internal/config"
 	controllerhttp "mongoGo/internal/controller/http"
 	PasteRepo "mongoGo/internal/repository/paste"
 	UserRepo "mongoGo/internal/repository/user"
 	"mongoGo/internal/services"
-	"mongoGo/pkg/handlers"
 	"mongoGo/pkg/middleware"
 	"net/http"
 )
@@ -24,7 +24,7 @@ func init() {
 
 func main() {
 	ctx := context.Background()
-	cfg := handlers.NewConfig()
+	cfg := config.NewConfig()
 
 	clientOptions := options.Client().ApplyURI(cfg.MongoURL)
 	client, err := mongo.Connect(ctx, clientOptions)
