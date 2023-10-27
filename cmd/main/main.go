@@ -31,11 +31,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if client.Ping(ctx, nil) != nil {
+	if err := client.Ping(ctx, nil); err != nil {
 		log.Fatal(err)
 	}
 	defer func() {
-		if client.Disconnect(ctx) != nil {
+		if err := client.Disconnect(ctx); err != nil {
 			log.Fatal(err)
 		}
 	}()

@@ -7,14 +7,10 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/cors v1.10.1
 	go.mongodb.org/mongo-driver v1.12.1
-	gorm.io/gorm v1.25.5
 )
 
 require (
-	github.com/caarlos0/env/v9 v9.0.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
