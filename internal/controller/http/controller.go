@@ -47,15 +47,7 @@ func (ctr *Controller) CreateUserEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	payload := struct {
-		Id string `json:"id"`
-	}{Id: id}
-	err = json.NewEncoder(w).Encode(&payload)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusTeapot)
-	}
-
-	w.WriteHeader(http.StatusCreated)
+	SuccessfulCreation(id, w)
 }
 
 func (ctr *Controller) GetUsersEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +64,7 @@ func (ctr *Controller) GetUsersEndpoint(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	SuccessArrRespond(users, w)
+	SuccessUsersRespond(users, w)
 }
 
 func (ctr *Controller) CreatePasteEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -95,15 +87,7 @@ func (ctr *Controller) CreatePasteEndpoint(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	payload := struct {
-		Id string `json:"id"`
-	}{Id: id}
-	err = json.NewEncoder(w).Encode(&payload)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusTeapot)
-	}
-
-	w.WriteHeader(http.StatusCreated)
+	SuccessfulCreation(id, w)
 }
 
 func (ctr *Controller) GetBatchEndpoint(w http.ResponseWriter, r *http.Request) {
