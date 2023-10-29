@@ -3,17 +3,18 @@ package repository
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"mongoGo/internal/models"
-	"mongoGo/internal/services"
+	PasteService "mongoGo/internal/services/paste"
 )
 
 type PasteRepository struct {
 	collection *mongo.Collection
 }
 
-var _ services.PasteRepository = (*PasteRepository)(nil)
+var _ PasteService.Repository = (*PasteRepository)(nil)
 
 func NewPasteRepository(col *mongo.Collection) *PasteRepository {
 	return &PasteRepository{
@@ -21,10 +22,14 @@ func NewPasteRepository(col *mongo.Collection) *PasteRepository {
 	}
 }
 
-func (ur *PasteRepository) CreatePaste(ctx context.Context, paste *models.Paste) (*mongo.InsertOneResult, error) {
-	insertedId, err := ur.collection.InsertOne(ctx, paste)
+func (ur *PasteRepository) CreatePaste(ctx context.Context, paste *models.Paste) (string, error) {
+	result, err := ur.collection.InsertOne(ctx, paste)
+	if err != nil {
+		return "", err
+	}
 
-	return insertedId, err
+	id := result.InsertedID.(primitive.ObjectID).Hex()
+	return id, err
 }
 
 func (ur *PasteRepository) GetBatch(ctx context.Context) ([]models.Paste, error) {

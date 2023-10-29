@@ -41,9 +41,18 @@ func (ctr *Controller) CreateUserEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if _, err := ctr.CreateUser(ctx, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	id, err := ctr.CreateUser(ctx, &req)
+	if err != nil {
+		http.Error(w, "can`t create user", http.StatusInternalServerError)
 		return
+	}
+
+	payload := struct {
+		Id string `json:"id"`
+	}{Id: id}
+	err = json.NewEncoder(w).Encode(&payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusTeapot)
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -80,9 +89,18 @@ func (ctr *Controller) CreatePasteEndpoint(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if _, err := ctr.CreatePaste(ctx, &req); err != nil {
+	id, err := ctr.CreatePaste(ctx, &req)
+	if err != nil {
 		http.Error(w, "can`t create paste", http.StatusInternalServerError)
 		return
+	}
+
+	payload := struct {
+		Id string `json:"id"`
+	}{Id: id}
+	err = json.NewEncoder(w).Encode(&payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusTeapot)
 	}
 
 	w.WriteHeader(http.StatusCreated)

@@ -11,7 +11,8 @@ import (
 	controllerhttp "mongoGo/internal/controller/http"
 	PasteRepo "mongoGo/internal/repository/paste"
 	UserRepo "mongoGo/internal/repository/user"
-	"mongoGo/internal/services"
+	PasteService "mongoGo/internal/services/paste"
+	UserService "mongoGo/internal/services/user"
 	"mongoGo/pkg/middleware"
 	"net/http"
 )
@@ -48,13 +49,11 @@ func main() {
 	userRepo := UserRepo.NewUserRepository(userCollection)
 	pasteRepo := PasteRepo.NewPasteRepository(pasteCollection)
 
-	service := services.NewService(services.Deps{
-		UserRepo:  userRepo,
-		PasteRepo: pasteRepo,
-	})
+	userService := UserService.NewService(UserService.Deps{UserRepo: userRepo})
+	pasteService := PasteService.NewService(PasteService.Deps{PasteRepo: pasteRepo})
 
-	ctr := controllerhttp.NewController(controllerhttp.UserService{UserManagement: service.UserRepo},
-		controllerhttp.PasteService{PasteManagement: service.PasteRepo})
+	ctr := controllerhttp.NewController(controllerhttp.UserService{UserManagement: userService},
+		controllerhttp.PasteService{PasteManagement: pasteService})
 
 	router := ctr.NewRouter()
 
@@ -68,5 +67,4 @@ func main() {
 	if err != nil {
 		log.Fatalf("ListenAndServe: %v", err)
 	}
-
 }

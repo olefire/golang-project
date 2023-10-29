@@ -7,14 +7,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"mongoGo/internal/models"
-	"mongoGo/internal/services"
+	UserService "mongoGo/internal/services/user"
 )
 
 type UserRepository struct {
 	collection *mongo.Collection
 }
 
-var _ services.UserRepository = (*UserRepository)(nil)
+var _ UserService.Repository = (*UserRepository)(nil)
 
 func NewUserRepository(col *mongo.Collection) *UserRepository {
 	return &UserRepository{
@@ -22,10 +22,14 @@ func NewUserRepository(col *mongo.Collection) *UserRepository {
 	}
 }
 
-func (ur *UserRepository) CreateUser(c context.Context, user *models.User) (*mongo.InsertOneResult, error) {
-	insertedId, err := ur.collection.InsertOne(c, user)
+func (ur *UserRepository) CreateUser(c context.Context, user *models.User) (string, error) {
+	result, err := ur.collection.InsertOne(c, user)
+	if err != nil {
+		return "", err
+	}
 
-	return insertedId, err
+	id := result.InsertedID.(primitive.ObjectID).Hex()
+	return id, err
 }
 
 func (ur *UserRepository) GetUsers(c context.Context) ([]models.User, error) {
