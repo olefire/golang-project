@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"mongoGo/internal/models"
 	"mongoGo/internal/services"
 	"net/http"
@@ -67,6 +68,43 @@ func (ctr *Controller) GetUsersEndpoint(w http.ResponseWriter, r *http.Request) 
 	SuccessUsersRespond(users, w)
 }
 
+func (ctr *Controller) GetUserEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	user, err := ctr.GetUser(ctx, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	SuccessUserRespond(user, w)
+}
+
+func (ctr *Controller) DeleteUserEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := ctr.DeleteUser(ctx, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	SuccessDelete(id, w)
+}
+
 func (ctr *Controller) CreatePasteEndpoint(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -105,4 +143,41 @@ func (ctr *Controller) GetBatchEndpoint(w http.ResponseWriter, r *http.Request) 
 	}
 
 	SuccessBatchRespond(batch, w)
+}
+
+func (ctr *Controller) GetPasteEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	paste, err := ctr.GetPasteById(ctx, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	SuccessPasteRespond(paste, w)
+}
+
+func (ctr *Controller) DeletePasteEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := ctr.DeletePaste(ctx, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	SuccessDelete(id, w)
 }

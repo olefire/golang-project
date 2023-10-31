@@ -1,17 +1,22 @@
 package http
 
 import (
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
 func (ctr *Controller) NewRouter() http.Handler {
-	router := http.NewServeMux()
+	router := mux.NewRouter()
 
-	router.HandleFunc("/user", ctr.CreateUserEndpoint)
-	router.HandleFunc("/users", ctr.GetUsersEndpoint)
+	router.HandleFunc("/user", ctr.CreateUserEndpoint).Methods("Post")
+	router.HandleFunc("/user/{id}", ctr.GetUserEndpoint).Methods("Get")
+	router.HandleFunc("/user/{id}", ctr.DeleteUserEndpoint).Methods("Delete")
+	router.HandleFunc("/users", ctr.GetUsersEndpoint).Methods("Get")
 
-	router.HandleFunc("/paste", ctr.CreatePasteEndpoint)
-	router.HandleFunc("/batch", ctr.GetBatchEndpoint)
+	router.HandleFunc("/paste", ctr.CreatePasteEndpoint).Methods("Post")
+	router.HandleFunc("/paste/{id}", ctr.GetPasteEndpoint).Methods("Get")
+	router.HandleFunc("/paste/{id}", ctr.DeletePasteEndpoint).Methods("Delete")
+	router.HandleFunc("/batch", ctr.GetBatchEndpoint).Methods("Get")
 
 	return router
 }

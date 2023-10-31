@@ -9,8 +9,8 @@ import (
 type Repository interface {
 	CreateUser(ctx context.Context, user *models.User) (string, error)
 	GetUsers(ctx context.Context) ([]models.User, error)
-	GetByEmail(ctx context.Context, email string) (*models.User, error)
-	GetByID(ctx context.Context, id string) (*models.User, error)
+	GetUser(ctx context.Context, id string) (*models.User, error)
+	DeleteUser(ctx context.Context, id string) error
 }
 
 type Deps struct {
@@ -42,4 +42,20 @@ func (s *Service) GetUsers(ctx context.Context) ([]models.User, error) {
 		return nil, fmt.Errorf("can`t get users: %w", err)
 	}
 	return users, err
+}
+
+func (s *Service) GetUser(ctx context.Context, id string) (*models.User, error) {
+	user, err := s.UserRepo.GetUser(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("can`t get user: %w", err)
+	}
+	return user, err
+}
+
+func (s *Service) DeleteUser(ctx context.Context, id string) error {
+	err := s.UserRepo.DeleteUser(ctx, id)
+	if err != nil {
+		return fmt.Errorf("can`t delete user: %w", err)
+	}
+	return err
 }

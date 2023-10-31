@@ -51,9 +51,28 @@ func (ur *PasteRepository) GetBatch(ctx context.Context) ([]models.Paste, error)
 	return batch, err
 }
 
-func (ur *PasteRepository) GetPasteByTitle(ctx context.Context, title string) (*models.Paste, error) {
+func (ur *PasteRepository) GetPasteById(ctx context.Context, id string) (*models.Paste, error) {
 	var paste models.Paste
 
-	err := ur.collection.FindOne(ctx, bson.M{"title": title}).Decode(&paste)
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ur.collection.FindOne(ctx, bson.M{"_id": _id}).Decode(&paste)
 	return &paste, err
+}
+
+func (ur *PasteRepository) DeletePaste(ctx context.Context, id string) error {
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = ur.collection.DeleteOne(ctx, bson.M{"_id": _id})
+	if err != nil {
+		return err
+	}
+
+	return err
 }

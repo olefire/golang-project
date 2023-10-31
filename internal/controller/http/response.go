@@ -28,6 +28,22 @@ func SuccessBatchRespond(batch []models.Paste, w http.ResponseWriter) {
 	}
 }
 
+func SuccessPasteRespond(paste *models.Paste, w http.ResponseWriter) {
+	payload := errData[*models.Paste]{
+		Data:       paste,
+		StatusCode: http.StatusOK,
+		Message:    "success",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
 func SuccessUsersRespond(users []models.User, w http.ResponseWriter) {
 	payload := errData[[]models.User]{
 		Data:       users,
@@ -44,6 +60,32 @@ func SuccessUsersRespond(users []models.User, w http.ResponseWriter) {
 	}
 }
 
+func SuccessUserRespond(user *models.User, w http.ResponseWriter) {
+	payload := errData[*models.User]{
+		Data:       user,
+		StatusCode: http.StatusOK,
+		Message:    "success",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func SuccessDelete(id string, w http.ResponseWriter) {
+	payload := struct {
+		Id string `json:"id"`
+	}{Id: id}
+	err := json.NewEncoder(w).Encode(&payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusTeapot)
+	}
+}
+
 func SuccessfulCreation(id string, w http.ResponseWriter) {
 	payload := struct {
 		Id string `json:"id"`
@@ -52,6 +94,4 @@ func SuccessfulCreation(id string, w http.ResponseWriter) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusTeapot)
 	}
-
-	w.WriteHeader(http.StatusCreated)
 }

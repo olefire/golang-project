@@ -9,7 +9,8 @@ import (
 type Repository interface {
 	CreatePaste(ctx context.Context, paste *models.Paste) (string, error)
 	GetBatch(ctx context.Context) ([]models.Paste, error)
-	GetPasteByTitle(ctx context.Context, title string) (*models.Paste, error)
+	GetPasteById(ctx context.Context, id string) (*models.Paste, error)
+	DeletePaste(ctx context.Context, id string) error
 }
 
 type Deps struct {
@@ -37,4 +38,20 @@ func (s *Service) CreatePaste(ctx context.Context, paste *models.Paste) (string,
 func (s *Service) GetBatch(ctx context.Context) ([]models.Paste, error) {
 	batch, err := s.PasteRepo.GetBatch(ctx)
 	return batch, err
+}
+
+func (s *Service) GetPasteById(ctx context.Context, id string) (*models.Paste, error) {
+	paste, err := s.PasteRepo.GetPasteById(ctx, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return paste, err
+}
+
+func (s *Service) DeletePaste(ctx context.Context, id string) error {
+	err := s.PasteRepo.DeletePaste(ctx, id)
+
+	return err
 }

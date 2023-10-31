@@ -51,21 +51,28 @@ func (ur *UserRepository) GetUsers(c context.Context) ([]models.User, error) {
 	return users, err
 }
 
-func (ur *UserRepository) GetByEmail(c context.Context, email string) (*models.User, error) {
-	var user models.User
-
-	err := ur.collection.FindOne(c, bson.M{"email": email}).Decode(&user)
-	return &user, err
-}
-
-func (ur *UserRepository) GetByID(c context.Context, id string) (*models.User, error) {
+func (ur *UserRepository) GetUser(c context.Context, id string) (*models.User, error) {
 	var user models.User
 
 	idHex, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return &user, err
+		return nil, err
 	}
 
 	err = ur.collection.FindOne(c, bson.M{"_id": idHex}).Decode(&user)
 	return &user, err
+}
+
+func (ur *UserRepository) DeleteUser(ctx context.Context, id string) error {
+	idHex, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	_, err = ur.collection.DeleteOne(ctx, bson.M{"_id": idHex})
+	if err != nil {
+		return err
+	}
+
+	return err
 }
