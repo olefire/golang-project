@@ -1,49 +1,78 @@
 import requests
 
-user_url = "http://localhost:8080/user"
-user = {
-    "name": "TestName",
-    "email": "Test@Email.ru"
-}
+user_url = "http://service:8080/user"
 
-paste_url = "http://localhost:8080/paste"
+paste_url = "http://service:8080/paste"
 
-post_user_request = requests.post(user_url, json=user).json()
 
-print("post user request result: ", post_user_request)
+def create_user(path: str):
+    user = {
+        "name": "TestName",
+        "email": "Test@Email.ru"
+    }
+    post_user_request = requests.post(path, json=user).json()
+    user_id = post_user_request["id"]
+    message = f"user ${user_id} successfully created"
+    print(message)
+    return user_id
 
-get_user_url = user_url + '/' + post_user_request["id"]
 
-get_user_request = requests.get(get_user_url).json()
+def get_user(path: str, user_id):
+    get_user_url = path + '/' + user_id
+    get_user_request = requests.get(get_user_url).json()
+    return get_user_request
 
-print("get user request result: ", get_user_request)
 
-paste = {
-    "title": "testTitle",
-    "paste": "testPasteText",
-    "userID": post_user_request["id"]
-}
+def create_paste(path: str, user_id):
+    test_paste = {
+        "title": "testTitle",
+        "paste": "testPasteText",
+        "userID": user_id
+    }
 
-post_paste_request = requests.post(paste_url, json=paste).json()
+    post_paste_request = requests.post(paste_url, json=test_paste).json()
+    paste_id = post_paste_request["id"]
 
-print("post paste request result: ", post_paste_request)
+    message = f"paste ${paste_id} successfully created"
+    print(message)
+    return paste_id
 
-get_paste_url = paste_url + '/' + post_paste_request["id"]
 
-get_paste_request = requests.get(get_paste_url).json()
+def get_paste(path: str, paste_id):
+    get_paste_url = paste_url + '/' + paste_id
 
-print("get paste request result: ", get_paste_request)
+    get_paste_request = requests.get(get_paste_url).json()
 
-paste_data = get_paste_request["data"]
+    return get_paste_request
 
-delete_paste_url = paste_url + '/' + paste_data["id"]
 
-delete_paste_request = requests.delete(delete_paste_url).json()
+def delete_paste(path: str, paste_id):
+    delete_paste_url = paste_url + '/' + paste_id
+    requests.delete(delete_paste_url)
 
-print("delete paste request result: ", delete_paste_request)
+    message = f"paste ${paste_id} successfully deleted"
+    return message
 
-delete_user_url = user_url + '/' + paste_data["userID"]
 
-delete_user_request = requests.delete(delete_user_url).json()
+def delete_user(path: str, user_id):
+    delete_user_url = user_url + '/' + user_id
+    requests.delete(delete_user_url)
 
-print("delete user request result: ", delete_user_request)
+    message = f"user ${user_id} successfully deleted"
+    return message
+
+
+user_id = create_user(user_url)
+user = get_user(user_url, user_id)
+
+paste_id = create_paste(paste_url, user_id)
+paste = get_paste(paste_url, paste_id)
+
+delete_paste_res = delete_paste(paste_url, paste_id)
+delete_user_res = delete_user(user_url, user_id)
+
+print(user)
+print(paste)
+
+print(delete_user_res)
+print(delete_paste_res)

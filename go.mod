@@ -1,9 +1,10 @@
-module mongoGo
+module golang-project
 
 go 1.21
 
 require (
 	github.com/fatih/color v1.15.0
+	github.com/gorilla/mux v1.8.0
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/cors v1.10.1
 	go.mongodb.org/mongo-driver v1.12.1
@@ -11,7 +12,6 @@ require (
 
 require (
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect

@@ -15,10 +15,10 @@ type Config struct {
 func NewConfig() *Config {
 	return &Config{
 		Port:            getEnv("PORT", ":8080"),
-		MongoURL:        getEnv("MONGO_URL", ""),
-		Database:        getEnv("DATABASE", ""),
-		UserCollection:  getEnv("USER_COLLECTION", ""),
-		PasteCollection: getEnv("PASTE_COLLECTION", ""),
+		MongoURL:        getEnv("MONGO_URL", "mongodb://localhost:27017/"),
+		Database:        getEnv("DATABASE", "golang"),
+		UserCollection:  getEnv("USER_COLLECTION", "users"),
+		PasteCollection: getEnv("PASTE_COLLECTION", "pastes"),
 	}
 }
 

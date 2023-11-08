@@ -6,5 +6,16 @@ services:
       - mongodata:/data/db
     ports:
       - "27017:27017"
+  service:
+    image: service
+    build: ./
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+  test:
+    image: python-test
+    build: ./test
+    ports:
+      - "8000:8000"
 volumes:
   mongodata:
