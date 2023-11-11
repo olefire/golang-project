@@ -3,4 +3,5 @@ FROM alpine
 COPY .env .
 ADD ./bin/app /app
 
-CMD ["/app"]
+RUN chmod +x ./app
+ENTRYPOINT ["./app"]
