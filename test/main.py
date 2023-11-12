@@ -1,4 +1,5 @@
 import requests
+from bson import ObjectId
 
 user_url = "http://service:8080/user"
 
@@ -10,69 +11,81 @@ def create_user(path: str):
         "name": "TestName",
         "email": "Test@Email.ru"
     }
-    post_user_request = requests.post(path, json=user).json()
-    user_id = post_user_request["id"]
-    message = f"user ${user_id} successfully created"
-    print(message)
-    return user_id
+
+    post_user_request = requests.post(path, json=user)
+    response = post_user_request.json()
+    uid = response["data"]
+
+    assert post_user_request.status_code == 200
+    assert response["msg"] == "success"
+    assert ObjectId.is_valid(uid)
+    return uid
 
 
-def get_user(path: str, user_id):
-    get_user_url = path + '/' + user_id
-    get_user_request = requests.get(get_user_url).json()
-    return get_user_request
+def get_user(path: str, uid):
+    get_user_url = path + '/' + uid
+    get_user_request = requests.get(get_user_url)
+    response = get_user_request.json()
+
+    assert get_user_request.status_code == 200
+    assert response["msg"] == "success"
+    assert ObjectId.is_valid(response["data"]["id"])
 
 
-def create_paste(path: str, user_id):
+def create_paste(path: str, uid):
     test_paste = {
         "title": "testTitle",
         "paste": "testPasteText",
-        "userID": user_id
+        "userID": uid
     }
 
-    post_paste_request = requests.post(paste_url, json=test_paste).json()
-    paste_id = post_paste_request["id"]
+    post_paste_request = requests.post(path, json=test_paste)
+    response = post_paste_request.json()
+    pid = response["data"]
 
-    message = f"paste ${paste_id} successfully created"
-    print(message)
-    return paste_id
+    assert post_paste_request.status_code == 200
+    assert response["msg"] == "success"
+    assert ObjectId.is_valid(pid)
 
-
-def get_paste(path: str, paste_id):
-    get_paste_url = paste_url + '/' + paste_id
-
-    get_paste_request = requests.get(get_paste_url).json()
-
-    return get_paste_request
+    return pid
 
 
-def delete_paste(path: str, paste_id):
-    delete_paste_url = paste_url + '/' + paste_id
-    requests.delete(delete_paste_url)
+def get_paste(path: str, pid):
+    get_paste_url = path + '/' + pid
+    get_paste_request = requests.get(get_paste_url)
+    response = get_paste_request.json()
 
-    message = f"paste ${paste_id} successfully deleted"
-    return message
-
-
-def delete_user(path: str, user_id):
-    delete_user_url = user_url + '/' + user_id
-    requests.delete(delete_user_url)
-
-    message = f"user ${user_id} successfully deleted"
-    return message
+    assert get_paste_request.status_code == 200
+    assert response["msg"] == "success"
+    assert ObjectId.is_valid(response["data"]["id"])
 
 
-user_id = create_user(user_url)
-user = get_user(user_url, user_id)
+def delete_paste(path: str, pid):
+    delete_paste_url = path + '/' + pid
+    delete_paste_request = requests.delete(delete_paste_url)
+    response = delete_paste_request.json()
 
-paste_id = create_paste(paste_url, user_id)
-paste = get_paste(paste_url, paste_id)
+    assert delete_paste_request.status_code == 200
+    assert response["msg"] == "success"
+    assert ObjectId.is_valid(response["data"])
 
-delete_paste_res = delete_paste(paste_url, paste_id)
-delete_user_res = delete_user(user_url, user_id)
 
-print(user)
-print(paste)
+def delete_user(path: str, uid):
+    delete_user_url = path + '/' + uid
+    delete_user_request = requests.delete(delete_user_url)
+    response = delete_user_request.json()
+    assert delete_user_request.status_code == 200
+    assert response["msg"] == "success"
+    assert ObjectId.is_valid(response["data"])
 
-print(delete_user_res)
-print(delete_paste_res)
+
+def run_test():
+    user_id = create_user(user_url)
+    get_user(user_url, user_id)
+    paste_id = create_paste(paste_url, user_id)
+    get_paste(paste_url, paste_id)
+    delete_paste(paste_url, paste_id)
+    delete_user(user_url, user_id)
+
+
+run_test()

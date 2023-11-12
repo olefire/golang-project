@@ -6,14 +6,14 @@ import (
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang-project/internal/config"
+	controllerhttp "golang-project/internal/controller/http"
+	PasteRepo "golang-project/internal/repository/paste"
+	UserRepo "golang-project/internal/repository/user"
+	PasteService "golang-project/internal/services/paste"
+	UserService "golang-project/internal/services/user"
+	"golang-project/pkg/middleware"
 	"log"
-	"mongoGo/internal/config"
-	controllerhttp "mongoGo/internal/controller/http"
-	PasteRepo "mongoGo/internal/repository/paste"
-	UserRepo "mongoGo/internal/repository/user"
-	PasteService "mongoGo/internal/services/paste"
-	UserService "mongoGo/internal/services/user"
-	"mongoGo/pkg/middleware"
 	"net/http"
 )
 
@@ -63,7 +63,7 @@ func main() {
 	})
 	handler := c.Handler(router)
 
-	err = http.ListenAndServe(cfg.Port, middleware.LogRequest(handler))
+	err = http.ListenAndServe(cfg.Port, middleware.PanicRecovery(middleware.LogRequest(handler)))
 	if err != nil {
 		log.Fatalf("ListenAndServe: %v", err)
 	}
