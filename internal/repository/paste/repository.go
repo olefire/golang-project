@@ -6,8 +6,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"mongoGo/internal/models"
-	PasteService "mongoGo/internal/services/paste"
+	"golang-project/internal/models"
+	PasteService "golang-project/internal/services/paste"
 )
 
 type PasteRepository struct {

@@ -57,7 +57,7 @@ def get_paste(path: str, pid):
 
     assert get_paste_request.status_code == 200
     assert response["msg"] == "success"
-    assert ObjectId.is_valid(response["data"]["id"])
+    assert ObjectId.is_valid(response["data"]["ijd"])
 
 
 def delete_paste(path: str, pid):

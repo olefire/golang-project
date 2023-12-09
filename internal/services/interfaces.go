@@ -2,7 +2,8 @@ package services
 
 import (
 	"context"
-	"mongoGo/internal/models"
+	"golang-project/internal/models"
+	"io"
 )
 
 type UserManagement interface {
@@ -17,4 +18,8 @@ type PasteManagement interface {
 	GetBatch(ctx context.Context) ([]models.Paste, error)
 	GetPasteById(ctx context.Context, id string) (*models.Paste, error)
 	DeletePaste(ctx context.Context, id string) error
+}
+
+type Linter interface {
+	LintCode(ctx context.Context) io.ReadCloser
 }

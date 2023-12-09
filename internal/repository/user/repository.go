@@ -6,8 +6,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"mongoGo/internal/models"
-	UserService "mongoGo/internal/services/user"
+	"golang-project/internal/models"
+	UserService "golang-project/internal/services/user"
 )
 
 type UserRepository struct {

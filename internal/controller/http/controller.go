@@ -2,10 +2,13 @@ package http
 
 import (
 	"encoding/json"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gorilla/mux"
-	"mongoGo/internal/models"
-	"mongoGo/internal/services"
+	"golang-project/internal/models"
+	"golang-project/internal/services"
+	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 type UserService struct {
@@ -16,15 +19,21 @@ type PasteService struct {
 	services.PasteManagement
 }
 
+type LinterService struct {
+	services.Linter
+}
+
 type Controller struct {
 	UserService
 	PasteService
+	LinterService
 }
 
-func NewController(us UserService, ps PasteService) *Controller {
+func NewController(us UserService, ps PasteService, ls LinterService) *Controller {
 	return &Controller{
-		UserService:  us,
-		PasteService: ps,
+		UserService:   us,
+		PasteService:  ps,
+		LinterService: ls,
 	}
 }
 
@@ -180,4 +189,40 @@ func (ctr *Controller) DeletePasteEndpoint(w http.ResponseWriter, r *http.Reques
 	}
 
 	SuccessDelete(id, w)
+}
+
+func (ctr *Controller) LintEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+	byteData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	f, err := os.Create("C:/Users/Zachar/Desktop/golang-project/code/test_file.py")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+	}(f)
+	_, err = f.Write(byteData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	res := ctr.LintCode(ctx)
+
+	_, err = stdcopy.StdCopy(w, os.Stderr, res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
 }

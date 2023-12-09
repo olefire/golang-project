@@ -2,7 +2,7 @@ package http
 
 import (
 	"encoding/json"
-	"mongoGo/internal/models"
+	"golang-project/internal/models"
 	"net/http"
 )
 
@@ -77,9 +77,11 @@ func SuccessUserRespond(user *models.User, w http.ResponseWriter) {
 }
 
 func SuccessDelete(id string, w http.ResponseWriter) {
-	payload := struct {
-		Id string `json:"id"`
-	}{Id: id}
+	payload := errData[string]{
+		Data:       id,
+		StatusCode: http.StatusOK,
+		Message:    "success",
+	}
 	err := json.NewEncoder(w).Encode(&payload)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusTeapot)
@@ -87,9 +89,11 @@ func SuccessDelete(id string, w http.ResponseWriter) {
 }
 
 func SuccessfulCreation(id string, w http.ResponseWriter) {
-	payload := struct {
-		Id string `json:"id"`
-	}{Id: id}
+	payload := errData[string]{
+		Data:       id,
+		StatusCode: http.StatusOK,
+		Message:    "success",
+	}
 	err := json.NewEncoder(w).Encode(&payload)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusTeapot)

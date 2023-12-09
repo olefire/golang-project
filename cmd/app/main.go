@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/docker/docker/client"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,6 +11,7 @@ import (
 	controllerhttp "golang-project/internal/controller/http"
 	PasteRepo "golang-project/internal/repository/paste"
 	UserRepo "golang-project/internal/repository/user"
+	"golang-project/internal/services/linter"
 	PasteService "golang-project/internal/services/paste"
 	UserService "golang-project/internal/services/user"
 	"golang-project/pkg/middleware"
@@ -27,21 +29,34 @@ func main() {
 	ctx := context.Background()
 	cfg := config.NewConfig()
 
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
+	}
+	defer func(cli *client.Client) {
+		err := cli.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(dockerClient)
+
+	dClient := linter.NewClient(dockerClient)
+
 	clientOptions := options.Client().ApplyURI(cfg.MongoURL)
-	client, err := mongo.Connect(ctx, clientOptions)
+	mongoClient, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := client.Ping(ctx, nil); err != nil {
+	if err := mongoClient.Ping(ctx, nil); err != nil {
 		log.Fatal(err)
 	}
 	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
+		if err := mongoClient.Disconnect(ctx); err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	db := client.Database(cfg.Database)
+	db := mongoClient.Database(cfg.Database)
 
 	userCollection := db.Collection(cfg.UserCollection)
 	pasteCollection := db.Collection(cfg.PasteCollection)
@@ -53,7 +68,8 @@ func main() {
 	pasteService := PasteService.NewService(PasteService.Deps{PasteRepo: pasteRepo})
 
 	ctr := controllerhttp.NewController(controllerhttp.UserService{UserManagement: userService},
-		controllerhttp.PasteService{PasteManagement: pasteService})
+		controllerhttp.PasteService{PasteManagement: pasteService},
+		controllerhttp.LinterService{Linter: dClient})
 
 	router := ctr.NewRouter()
 

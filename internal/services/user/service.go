@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
-	"mongoGo/internal/models"
+	"golang-project/internal/models"
 )
 
 type Repository interface {
