@@ -1,89 +1,129 @@
 import React, {useEffect, useState} from 'react';
-import {useParams} from 'react-router-dom';
-import axios from 'axios';
+import {useParams, useNavigate} from 'react-router-dom';
 import CodeMirror from "@uiw/react-codemirror";
 import {python} from "@codemirror/lang-python";
-import { Button } from 'react-bootstrap';
+import {Button, Col, Container, Row} from 'react-bootstrap';
+import {CreatePaste, GetPasteById, PasteData} from '../services/paste'
+import {LintPaste, LintResult} from '../services/lint'
 
+import '../styles/PastePage.css';
 
-interface PasteData {
-    id: string;
-    paste: string;
-    title: string;
-    userID: string;
-}
-
-interface LintResult {
-    message: string;
-    line: number;
-}
 
 export const PastePage: React.FC = () => {
-    const {id} = useParams<{ id: string }>();
-    const apiURL = `http://localhost:8080/paste/${id}`;
-    const [pasteData, setPasteData] = useState<PasteData | null>(null);
+    const navigate = useNavigate();
+    const [lintError, setLintError] = useState<string | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios.get(apiURL);
-                setPasteData(response.data.data);
-                setValue(response.data.data.paste)
-                console.log(response)
-            } catch (error) {
-                console.error(error);
-            }
-        };
 
-        fetchData().then();
-    }, [apiURL, id]);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [response, setResponse] = useState<LintResult[]>([])
-    const [value, setValue] = React.useState(pasteData?.paste);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const onChange = React.useCallback((value: string) => {
-        setValue(value)
-        console.log('value:', value);
-    }, []);
+    const {id} = useParams();
+    const [pasteData, setPasteData] = useState<PasteData>({
+        id: "",
+        paste: "",
+        title: "example",
+        userID: "",
+    });
+    const [lintResults, setLintResults] = useState<LintResult[]>([])
+    const [pasteContent, setPasteContent] = React.useState(pasteData.paste);
+
+    const onChange = React.useCallback(setPasteContent, []);
 
     const handleSubmit = async () => {
-        try {
-            const res = await fetch('http://localhost:8080/lint', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain'
-                },
-                body: value
-            });
-            const data = await res.json();
-            console.log(data)
-            setResponse(data)
-
-        } catch (error) {
-            console.error(error);
+        if (pasteContent === "") {
+            setLintError("Can't lint empty paste");
+            return;
         }
+        await LintPaste(pasteContent).then((resp) => {
+                if (resp.error !== "") {
+                    setLintError(resp.error);
+                    return;
+                }
+                setLintError(null);
+                setLintResults(resp.result);
+            }
+        )
     };
-    let cm = <CodeMirror
-        className={"codeMirror__textarea"}
-        theme={"dark"}
-        value={value}
-        height="400px"
-        extensions={[python()]}
-        onChange={onChange}
-    />;
+
+    const handleSave = async () => {
+        // TODO: setPasteContent doesn't mutate pasteData.paste
+        if (pasteContent === "") {
+            setSaveError(`Can't save empty paste`);
+        }
+        pasteData.paste = pasteContent
+        await CreatePaste(pasteData).then((resp) => {
+                if (resp.error !== "") {
+                    setSaveError(`Error saving the paste: ${resp.error}`);
+                    return;
+                }
+                setSaveError(null);
+                const pasteId = resp.result;
+                console.log(`created paste with id=${pasteId}`);
+                navigate(`/paste/${pasteId}`)
+            }
+        )
+    };
+
+    useEffect(() => {
+        // There is no id for `/` route
+        // Fetch paste only for `/paste/:id` route
+        if (id != null) {
+            GetPasteById(id).then((resp) => {
+                if (resp.error !== "") {
+                    setFetchError(`Error fetching the paste: ${resp.error}`)
+                    return;
+                }
+                setFetchError(null)
+                setPasteData(resp.result);
+                setPasteContent(resp.result.paste)
+            })
+        }
+    }, [id]);
 
     return (
-        <>
-            <div>
-                <h1>
-                    Python linter
-                </h1>
-                {cm}
-                <Button as="button" variant="primary" onClick={handleSubmit}>Lint code</Button>
-                <div>{response.map(item => (
-                    <li>Error code {item.message} in line {item.line}</li>
-                ))}</div>
-            </div>
-        </>
+        <Container className="paste-container">
+            <Row>
+                <Col>
+                    <h1 className="page-title">Python Linter</h1>
+                    {fetchError && <div className="error-message">{fetchError}</div>}
+                    <CodeMirror
+                        className="codeMirror__textarea"
+                        theme={"dark"}
+                        value={pasteContent}
+                        height="700px"
+                        extensions={[python()]}
+                        onChange={onChange}
+                    />
+                    <div className="button-container">
+                        <Button
+                            as="button"
+                            variant="primary"
+                            onClick={handleSubmit}
+                            className="lint-button"
+                        >
+                            Lint Code
+                        </Button>
+                        <Button
+                            as="button"
+                            variant="success"
+                            onClick={handleSave}
+                            className="save-button"
+                        >
+                            Save Paste
+                        </Button>
+                    </div>
+                    {lintError && <div className="error-message">{lintError}</div>}
+                    {saveError && <div className="error-message">{saveError}</div>}
+                </Col>
+                <Col>
+                    <div className="response-container">
+                        {lintResults.map((item, index) => (
+                            <div key={index} className="error-message">
+                                Error code {item.message} in line {item.line}
+                            </div>
+                        ))}
+                    </div>
+                </Col>
+            </Row>
+        </Container>
     );
 };
