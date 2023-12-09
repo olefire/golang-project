@@ -1,0 +1,23 @@
+version: '3'
+services:
+  mongodb:
+    image: mongodb/mongodb-community-server:6.0-ubi8
+    volumes:
+      - mongodata:/data/db
+    ports:
+      - "27017:27017"
+  service:
+    image: service
+    build: ..
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+  test:
+    image: python-test
+    build: test
+    ports:
+      - "8000:8000"
+volumes:
+  mongodata:
