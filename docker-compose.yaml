@@ -16,7 +16,7 @@ services:
       - mongodb
   test:
     image: python-test
-    build: ./test
+    build: backend/test
     ports:
       - "8000:8000"
 volumes:
