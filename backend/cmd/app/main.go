@@ -3,8 +3,10 @@ package main
 import (
 	"backend/internal/config"
 	controllerhttp "backend/internal/controller/http"
+	AuthRepo "backend/internal/repository/auth"
 	PasteRepo "backend/internal/repository/paste"
 	UserRepo "backend/internal/repository/user"
+	AuthService "backend/internal/services/auth"
 	PasteService "backend/internal/services/paste"
 	"backend/internal/services/pylinter"
 	UserService "backend/internal/services/user"
@@ -48,16 +50,19 @@ func main() {
 	pasteCollection := db.Collection(cfg.PasteCollection)
 
 	userRepo := UserRepo.NewUserRepository(userCollection)
+	authRepo := AuthRepo.NewUserRepository(userCollection)
 	pasteRepo := PasteRepo.NewPasteRepository(pasteCollection)
 	pylint := pylinter.PylintLinter{}
 
 	userService := UserService.NewService(UserService.Deps{UserRepo: userRepo})
 	pasteService := PasteService.NewService(PasteService.Deps{PasteRepo: pasteRepo})
 	linterService := pylinter.NewClient(&pylint)
+	authService := AuthService.NewService(AuthService.Deps{AuthRepo: authRepo})
 
 	ctr := controllerhttp.NewController(controllerhttp.UserService{UserManagement: userService},
 		controllerhttp.PasteService{PasteManagement: pasteService},
-		controllerhttp.LinterService{Linter: linterService})
+		controllerhttp.LinterService{Linter: linterService},
+		controllerhttp.AuthService{AuthManagement: authService})
 
 	router := ctr.NewRouter()
 
