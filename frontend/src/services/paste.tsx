@@ -24,9 +24,11 @@ export const CreatePaste = async (paste: PasteData): Promise<Result<string>> => 
         }
 
         const response = await axios.post(`${api}/paste`, paste);
-        const data = response.data.data
+        const data = response.data.id
         if (response.status === 200) {
             console.log(`CreatePaste ok`)
+            console.log(Ok(data))
+            console.log(data)
             return Ok(data)
         }
         console.error(`CreatePaste request failed with status ${response.status}, response ${response.statusText}`)

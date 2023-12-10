@@ -26,7 +26,7 @@ export const PastePage: React.FC = () => {
     const [lintResults, setLintResults] = useState<LintResult[]>([])
     const [pasteContent, setPasteContent] = React.useState(pasteData.paste);
 
-    const onChange = React.useCallback(setPasteContent, []);
+    const onChange = React.useCallback(setPasteContent, [setPasteContent]);
 
     const handleSubmit = async () => {
         if (pasteContent === "") {
@@ -40,6 +40,7 @@ export const PastePage: React.FC = () => {
                 }
                 setLintError(null);
                 setLintResults(resp.result);
+                console.log(lintResults)
             }
         )
     };
