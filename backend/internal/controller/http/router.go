@@ -18,5 +18,7 @@ func (ctr *Controller) NewRouter() http.Handler {
 	router.HandleFunc("/paste/{id}", ctr.DeletePasteEndpoint).Methods("Delete")
 	router.HandleFunc("/batch", ctr.GetBatchEndpoint).Methods("Get")
 
+	router.HandleFunc("/lint", ctr.LintEndpoint).Methods("Post")
+
 	return router
 }

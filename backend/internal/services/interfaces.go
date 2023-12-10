@@ -2,6 +2,7 @@ package services
 
 import (
 	"backend/internal/models"
+	"backend/internal/models/linter"
 	"context"
 )
 
@@ -17,4 +18,8 @@ type PasteManagement interface {
 	GetBatch(ctx context.Context) ([]models.Paste, error)
 	GetPasteById(ctx context.Context, id string) (*models.Paste, error)
 	DeletePaste(ctx context.Context, id string) error
+}
+
+type Linter interface {
+	LintCode(sourceFile linter.SourceFile) ([]linter.LintCodeIssue, error)
 }

@@ -2,9 +2,11 @@ package http
 
 import (
 	"backend/internal/models"
+	"backend/internal/models/linter"
 	"backend/internal/services"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"io"
 	"net/http"
 )
 
@@ -16,15 +18,21 @@ type PasteService struct {
 	services.PasteManagement
 }
 
+type LinterService struct {
+	services.Linter
+}
+
 type Controller struct {
 	UserService
 	PasteService
+	LinterService
 }
 
-func NewController(us UserService, ps PasteService) *Controller {
+func NewController(us UserService, ps PasteService, ls LinterService) *Controller {
 	return &Controller{
-		UserService:  us,
-		PasteService: ps,
+		UserService:   us,
+		PasteService:  ps,
+		LinterService: ls,
 	}
 }
 
@@ -177,7 +185,33 @@ func (ctr *Controller) DeletePasteEndpoint(w http.ResponseWriter, r *http.Reques
 	err := ctr.DeletePaste(ctx, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	SuccessDelete(id, w)
+}
+
+func (ctr *Controller) LintEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	byteData, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	sourceFile := linter.SourceFile{Code: string(byteData), Language: "python"}
+
+	lintIssues, err := ctr.LintCode(sourceFile)
+
+	err = json.NewEncoder(w).Encode(&lintIssues)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 }
