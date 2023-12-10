@@ -4,12 +4,11 @@ import (
 	"backend/internal/models"
 	"backend/internal/models/linter"
 	"backend/internal/services"
-	utils "backend/internal/utils/auth"
-	"encoding/json"
-	"github.com/gorilla/mux"
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
-	"time"
+	"strings"
 )
 
 type UserService struct {
@@ -44,253 +43,168 @@ func NewController(us UserService, ps PasteService, ls LinterService, as AuthSer
 	}
 }
 
-func (ctr *Controller) SignUpUserEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (ctr *Controller) SignUpUserEndpoint(ctx *gin.Context) {
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+	var user *models.User
+	if err := ctx.ShouldBindJSON(&user); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+	id, err := ctr.SignUpUser(ctx, user)
 
-	var req models.User
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	id, err := ctr.SignUpUser(ctx, &req)
 	if err != nil {
-		http.Error(w, "can`t sign up user", http.StatusInternalServerError)
+		if strings.Contains(err.Error(), "email already exist") {
+			ctx.JSON(http.StatusConflict, gin.H{"status": "error", "message": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
-	SuccessfulCreation(id, w)
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "message": "user successfully signed up", "id": id})
 }
 
-func (ctr *Controller) SignInUserEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+// Todo
+//func (ctr *Controller) SignInUserEndpoint(ctx *gin.Context) {
+//	var credentials *models.SignInInput
+//
+//	if err := ctx.ShouldBindJSON(&credentials); err != nil {
+//		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+//		return
+//	}
+//
+//	user, err := ctr.FindUserByEmail(ctx, credentials.Email)
+//	if err != nil {
+//		if errors.Is(err, mongo.ErrNoDocuments) {
+//			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email or password"})
+//			return
+//		}
+//		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+//		return
+//	}
+//
+//	if err := utils.VerifyPassword(user.Password, credentials.Password); err != nil {
+//		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email or Password"})
+//		return
+//	}
+//
+//	access_token, err := utils.CreateToken(config.AccessTokenExpiresIn, user.ID, config.AccessTokenPrivateKey)
+//	if err != nil {
+//		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+//		return
+//	}
+//
+//	refresh_token, err := utils.CreateToken(config.RefreshTokenExpiresIn, user.ID, config.RefreshTokenPrivateKey)
+//	if err != nil {
+//		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+//		return
+//	}
+//
+//	ctx.SetCookie("access_token", access_token, config.AccessTokenMaxAge*60, "/", "localhost", false, true)
+//	ctx.SetCookie("refresh_token", refresh_token, config.RefreshTokenMaxAge*60, "/", "localhost", false, true)
+//	ctx.SetCookie("logged_in", "true", config.AccessTokenMaxAge*60, "/", "localhost", false, false)
+//
+//	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": access_token})
+//}
 
-	var req *models.SignInInput
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+func (ctr *Controller) LogoutUser(ctx *gin.Context) {
+	ctx.SetCookie("access_token", "", -1, "/", "localhost", false, true)
+	ctx.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
+	ctx.SetCookie("logged_in", "", -1, "/", "localhost", false, true)
 
-	user, err := ctr.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		//if errors.Is(err, mongo.ErrNoDocuments) {
-		//	http.Error(w, "no such email email", http.StatusBadRequest)
-		//	return
-		//}
-		http.Error(w, "no such email "+req.Email, http.StatusBadRequest)
-		return
-	}
-
-	if err := utils.VerifyPassword(user.Password, req.Password); err != nil {
-		http.Error(w, "invalid email or password", http.StatusBadRequest)
-		return
-	}
-
-	//config, _ := config.LoadConfig(".")
-	// Generate Tokens
-	accessToken, err := utils.CreateToken(time.Duration(time.Minute*15), user.ID, "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlCUEFJQkFBSkJBTzVIKytVM0xrWC91SlRvRHhWN01CUURXSTdGU0l0VXNjbGFFKzlaUUg5Q2VpOGIxcUVmCnJxR0hSVDVWUis4c3UxVWtCUVpZTER3MnN3RTVWbjg5c0ZVQ0F3RUFBUUpCQUw4ZjRBMUlDSWEvQ2ZmdWR3TGMKNzRCdCtwOXg0TEZaZXMwdHdtV3Vha3hub3NaV0w4eVpSTUJpRmI4a25VL0hwb3piTnNxMmN1ZU9wKzVWdGRXNApiTlVDSVFENm9JdWxqcHdrZTFGY1VPaldnaXRQSjNnbFBma3NHVFBhdFYwYnJJVVI5d0loQVBOanJ1enB4ckhsCkUxRmJxeGtUNFZ5bWhCOU1HazU0Wk1jWnVjSmZOcjBUQWlFQWhML3UxOVZPdlVBWVd6Wjc3Y3JxMTdWSFBTcXoKUlhsZjd2TnJpdEg1ZGdjQ0lRRHR5QmFPdUxuNDlIOFIvZ2ZEZ1V1cjg3YWl5UHZ1YStxeEpXMzQrb0tFNXdJZwpQbG1KYXZsbW9jUG4rTkVRdGhLcTZuZFVYRGpXTTlTbktQQTVlUDZSUEs0PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ==")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	refreshToken, err := utils.CreateToken(time.Duration(time.Minute*60), user.ID, "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlCT1FJQkFBSkJBSWFJcXZXeldCSndnYjR1SEhFQ01RdHFZMTI5b2F5RzVZMGlGcG51a0J1VHpRZVlQWkE4Cmx4OC9lTUh3Rys1MlJGR3VxMmE2N084d2s3TDR5dnY5dVY4Q0F3RUFBUUpBRUZ6aEJqOUk3LzAxR285N01CZUgKSlk5TUJLUEMzVHdQQVdwcSswL3p3UmE2ZkZtbXQ5NXNrN21qT3czRzNEZ3M5T2RTeWdsbTlVdndNWXh6SXFERAplUUloQVA5UStrMTBQbGxNd2ZJbDZtdjdTMFRYOGJDUlRaZVI1ZFZZb3FTeW40YmpBaUVBaHVUa2JtZ1NobFlZCnRyclNWZjN0QWZJcWNVUjZ3aDdMOXR5MVlvalZVRlVDSUhzOENlVHkwOWxrbkVTV0dvV09ZUEZVemhyc3Q2Z08KU3dKa2F2VFdKdndEQWlBdWhnVU8yeEFBaXZNdEdwUHVtb3hDam8zNjBMNXg4d012bWdGcEFYNW9uUUlnQzEvSwpNWG1heWtsaFRDeWtXRnpHMHBMWVdkNGRGdTI5M1M2ZUxJUlNIS009Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0t")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    accessToken,
-		Expires:  time.Now().Add(time.Hour * 24 * 7),
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-		Secure:   true,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Expires:  time.Now().Add(time.Hour * 24 * 30),
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-		Secure:   true,
-	})
-	SuccessLogin(accessToken, w)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
-func (ctr *Controller) LogoutUserEndpoint(w http.ResponseWriter, r *http.Request) {
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    "",
-		MaxAge:   -1,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-		Secure:   true,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    "",
-		MaxAge:   -1,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-		Secure:   true,
-	})
-
-	//ctx.SetCookie("access_token", "", -1, "/", "localhost", false, true)
-	//ctx.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
-	//ctx.SetCookie("logged_in", "", -1, "/", "localhost", false, true)
-	//
-	//ctx.JSON(http.StatusOK, gin.H{"status": "success"})
-}
-
-func (ctr *Controller) GetUsersEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
+func (ctr *Controller) GetUsersEndpoint(ctx *gin.Context) {
 
 	users, err := ctr.GetUsers(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessUsersRespond(users, w)
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": users})
 }
 
-func (ctr *Controller) GetUserEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	ctx := r.Context()
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (ctr *Controller) GetUserEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
 
 	user, err := ctr.GetUser(ctx, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessUserRespond(user, w)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": user})
 }
 
-func (ctr *Controller) DeleteUserEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	ctx := r.Context()
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (ctr *Controller) DeleteUserEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
 
 	err := ctr.DeleteUser(ctx, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
 	}
 
-	SuccessDelete(id, w)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": fmt.Sprintf("deleted user id: %s", id), "id": id})
 }
 
-func (ctr *Controller) CreatePasteEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (ctr *Controller) CreatePasteEndpoint(ctx *gin.Context) {
+	var paste *models.Paste
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+	if err := ctx.ShouldBindJSON(&paste); err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	var req models.Paste
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	id, err := ctr.CreatePaste(ctx, &req)
+	id, err := ctr.CreatePaste(ctx, paste)
 	if err != nil {
-		http.Error(w, "can`t create paste", http.StatusInternalServerError)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessfulCreation(id, w)
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": id})
 }
 
-func (ctr *Controller) GetBatchEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
+func (ctr *Controller) GetBatchEndpoint(ctx *gin.Context) {
 
 	batch, err := ctr.GetBatch(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessBatchRespond(batch, w)
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": batch})
 }
 
-func (ctr *Controller) GetPasteEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	ctx := r.Context()
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (ctr *Controller) GetPasteEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
 
 	paste, err := ctr.GetPasteById(ctx, id)
+
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessPasteRespond(paste, w)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": paste})
 }
 
-func (ctr *Controller) DeletePasteEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	ctx := r.Context()
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (ctr *Controller) DeletePasteEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
 
 	err := ctr.DeletePaste(ctx, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
 	}
 
-	SuccessDelete(id, w)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": fmt.Sprintf("deleted user id: %s", id), "id": id})
 }
 
-func (ctr *Controller) LintEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	byteData, err := io.ReadAll(r.Body)
+func (ctr *Controller) LintEndpoint(ctx *gin.Context) {
+	byteData, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
@@ -298,11 +212,11 @@ func (ctr *Controller) LintEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	lintIssues, err := ctr.LintCode(sourceFile)
 
-	err = json.NewEncoder(w).Encode(&lintIssues)
-
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+
+	ctx.JSON(http.StatusOK, gin.H{"LintResult": lintIssues})
 
 }

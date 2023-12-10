@@ -1,28 +1,27 @@
 package http
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 func (ctr *Controller) NewRouter() http.Handler {
-	router := mux.NewRouter()
+	//router := mux.NewRouter()
+	router := gin.Default()
+	router.POST("/auth/register", ctr.SignUpUserEndpoint)
+	//router.POST("/auth/login", ctr.SignInUserEndpoint)
+	router.POST("/auth/logout", ctr.SignUpUserEndpoint)
 
-	router.HandleFunc("/auth/register", ctr.SignUpUserEndpoint).Methods("Post")
-	router.HandleFunc("/auth/login", ctr.SignInUserEndpoint).Methods("Post")
-	router.HandleFunc("/auth/logout", ctr.LogoutUserEndpoint).Methods("Post")
+	router.GET("/user/{id}", ctr.GetUserEndpoint)
+	router.DELETE("/user/{id}", ctr.DeleteUserEndpoint)
+	router.GET("/user", ctr.GetUsersEndpoint)
 
-	//router.HandleFunc("/user", ctr.CreateUserEndpoint).Methods("Post")
-	router.HandleFunc("/user/{id}", ctr.GetUserEndpoint).Methods("Get")
-	router.HandleFunc("/user/{id}", ctr.DeleteUserEndpoint).Methods("Delete")
-	router.HandleFunc("/users", ctr.GetUsersEndpoint).Methods("Get")
+	router.POST("/paste", ctr.CreatePasteEndpoint)
+	router.GET("/paste/{id}", ctr.GetPasteEndpoint)
+	router.DELETE("/paste/{id}", ctr.DeletePasteEndpoint)
+	router.GET("/paste", ctr.GetBatchEndpoint)
 
-	router.HandleFunc("/paste", ctr.CreatePasteEndpoint).Methods("Post")
-	router.HandleFunc("/paste/{id}", ctr.GetPasteEndpoint).Methods("Get")
-	router.HandleFunc("/paste/{id}", ctr.DeletePasteEndpoint).Methods("Delete")
-	router.HandleFunc("/batch", ctr.GetBatchEndpoint).Methods("Get")
-
-	router.HandleFunc("/lint", ctr.LintEndpoint).Methods("Post")
+	router.POST("/lint", ctr.LintEndpoint)
 
 	return router
 }
