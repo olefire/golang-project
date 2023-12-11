@@ -10,3 +10,8 @@ type Paste struct {
 	Paste  string             `json:"paste" bson:"paste" binding:"required"`
 	UserID primitive.ObjectID `json:"userID,omitempty" bson:"userID,omitempty"`
 }
+
+type UpdatePaste struct {
+	Title string `json:"title" bson:"title" binding:"required"`
+	Paste string `json:"paste" bson:"paste" binding:"required"`
+}

@@ -35,15 +35,6 @@ func (s *Service) FindUserByEmail(ctx context.Context, email string) (*models.Us
 	return user, err
 }
 
-//func (s *Service) CreateUser(ctx context.Context, user *models.User) (string, error) {
-//	insertedId, err := s.UserRepo.CreateUser(ctx, user)
-//	if err != nil {
-//		return "", fmt.Errorf("can`t create user: %w", err)
-//	}
-//
-//	return insertedId, err
-//}
-
 func (s *Service) GetUsers(ctx context.Context) ([]models.User, error) {
 	users, err := s.UserRepo.GetUsers(ctx)
 	if err != nil {

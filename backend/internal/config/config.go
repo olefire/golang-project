@@ -10,6 +10,11 @@ type Config struct {
 	Database        string
 	UserCollection  string
 	PasteCollection string
+
+	AccessTokenPrivateKey  string
+	AccessTokenPublicKey   string
+	RefreshTokenPrivateKey string
+	RefreshTokenPublicKey  string
 }
 
 func NewConfig() *Config {
@@ -19,6 +24,11 @@ func NewConfig() *Config {
 		Database:        getEnv("DATABASE", "golang"),
 		UserCollection:  getEnv("USER_COLLECTION", "users"),
 		PasteCollection: getEnv("PASTE_COLLECTION", "pastes"),
+
+		AccessTokenPrivateKey:  getEnv("ACCESS_TOKEN_PRIVATE_KEY", ""),
+		AccessTokenPublicKey:   getEnv("ACCESS_TOKEN_PUBLIC_KEY", ""),
+		RefreshTokenPrivateKey: getEnv("REFRESH_TOKEN_PRIVATE_KEY", ""),
+		RefreshTokenPublicKey:  getEnv("REFRESH_TOKEN_PUBLIC_KEY", ""),
 	}
 }
 

@@ -37,23 +37,6 @@ func CreateToken(ttl time.Duration, payload interface{}, privateKey string) (str
 	return token, nil
 }
 
-//func TokenValid(coookie *http.Cookie) error {
-//	tokenString := ExtractToken(coookie)
-//	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-//		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-//			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-//		}
-//		return TOKEN_SECRET, nil
-//	})
-//	if err != nil {
-//		return err
-//	}
-//	if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-//		return nil
-//	}
-//	return errors.New("invalid tokken")
-//}
-
 func ValidateToken(token string, publicKey string) (interface{}, error) {
 	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey)
 	if err != nil {
@@ -84,6 +67,23 @@ func ValidateToken(token string, publicKey string) (interface{}, error) {
 
 	return claims["sub"], nil
 }
+
+//func TokenValid(coookie *http.Cookie) error {
+//	tokenString := ExtractToken(coookie)
+//	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+//		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+//			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+//		}
+//		return TOKEN_SECRET, nil
+//	})
+//	if err != nil {
+//		return err
+//	}
+//	if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+//		return nil
+//	}
+//	return errors.New("invalid tokken")
+//}
 
 //func ExtractTokenID(cookie *http.Cookie) (uuid.UUID, error) {
 //	tokenString := ExtractToken(cookie)

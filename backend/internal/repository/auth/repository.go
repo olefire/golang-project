@@ -36,3 +36,8 @@ func (ar *AuthRepository) SignInUser(ctx context.Context, signInInput *models.Si
 	//TODO implement me
 	panic("implement me")
 }
+
+func (ar *AuthRepository) LogoutUser() {
+	//TODO implement me
+	panic("implement me")
+}

@@ -9,6 +9,10 @@ import (
 type Repository interface {
 	SignUpUser(ctx context.Context, signUpInput *models.User) (string, error)
 	SignInUser(ctx context.Context, signInInput *models.SignInInput) (string, error)
+	LogoutUser()
+}
+
+type Token struct {
 }
 
 type Deps struct {

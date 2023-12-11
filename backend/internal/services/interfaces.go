@@ -16,6 +16,7 @@ type UserManagement interface {
 type PasteManagement interface {
 	CreatePaste(ctx context.Context, paste *models.Paste) (string, error)
 	GetBatch(ctx context.Context) ([]models.Paste, error)
+	UpdatePaste(ctx context.Context, id string, upd *models.UpdatePaste) (*models.Paste, error)
 	GetPasteById(ctx context.Context, id string) (*models.Paste, error)
 	DeletePaste(ctx context.Context, id string) error
 }

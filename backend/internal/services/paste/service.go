@@ -9,6 +9,7 @@ import (
 type Repository interface {
 	CreatePaste(ctx context.Context, paste *models.Paste) (string, error)
 	GetBatch(ctx context.Context) ([]models.Paste, error)
+	UpdatePaste(ctx context.Context, id string, upd *models.UpdatePaste) (*models.Paste, error)
 	GetPasteById(ctx context.Context, id string) (*models.Paste, error)
 	DeletePaste(ctx context.Context, id string) error
 }
@@ -54,4 +55,14 @@ func (s *Service) DeletePaste(ctx context.Context, id string) error {
 	err := s.PasteRepo.DeletePaste(ctx, id)
 
 	return err
+}
+
+func (s *Service) UpdatePaste(ctx context.Context, id string, upd *models.UpdatePaste) (*models.Paste, error) {
+	updated, err := s.PasteRepo.UpdatePaste(ctx, id, upd)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, err
 }
