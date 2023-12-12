@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "lint-service/protos/gen";
+
+service UserService {
+  rpc LintCode(Lint) returns (LintResult) {}
+}
+
+message Lint {
+  string code = 1;
+}
+
+message LintCodeIssue {
+  string message = 1;
+  int32 line = 2;
+}
+
+message LintResult {
+  repeated LintCodeIssue result = 1;
+}
+
+//protoc -I proto protos/proto/lint.proto --go_out=./gen/go/ --go_opt=paths=source_relative --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
