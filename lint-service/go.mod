@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	github.com/gin-gonic/gin v1.9.1
-	github.com/rs/cors v1.10.1
 	google.golang.org/grpc v1.60.0
 	google.golang.org/protobuf v1.31.0
 )

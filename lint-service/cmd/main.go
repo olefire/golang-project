@@ -1,36 +1,47 @@
 package main
 
 import (
-	"github.com/rs/cors"
-	"lint-service/internal/controller"
+	"google.golang.org/grpc"
+	gapi "lint-service/internal/gapi/linters"
+	"lint-service/internal/linters"
 	"lint-service/internal/linters/python/metrics"
 	"lint-service/internal/linters/python/pylint"
-	"lint-service/internal/services"
 	"lint-service/internal/services/linter"
+	"lint-service/pkg/protos/gen"
 	"log"
-	"net/http"
+	"net"
+)
+
+var (
+	linterService *linter.Service
 )
 
 func main() {
 	pyLint := pylint.Linter{}
 	pyMetrics := metrics.Linter{}
 
-	linters := []services.Linter{&pyLint, &pyMetrics}
+	l := []linters.Linter{&pyLint, &pyMetrics}
 
-	linterService := linter.NewClient(linters)
+	linterService = linter.NewClient(l)
 
-	ctr := controller.NewController(controller.LinterService{Service: linterService})
+	startGrpcServer()
+}
 
-	router := ctr.NewRouter()
+func startGrpcServer() {
+	linterServer := gapi.NewGrpcServer(gapi.LintingService{LinterManagement: linterService})
 
-	c := cors.New(cors.Options{
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders: []string{"Content-Type", "Origin", "Accept", "*"},
-	})
-	handler := c.Handler(router)
+	grpcServer := grpc.NewServer()
 
-	err := http.ListenAndServe(":8000", handler)
+	gen.RegisterLintingServiceServer(grpcServer, linterServer)
+
+	listener, err := net.Listen("tcp", ":8000")
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		log.Fatal("cannot create grpc server: ", err)
+	}
+
+	log.Printf("start gRPC server on %s", listener.Addr().String())
+	err = grpcServer.Serve(listener)
+	if err != nil {
+		log.Fatal("cannot create grpc server: ", err)
 	}
 }

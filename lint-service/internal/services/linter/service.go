@@ -2,16 +2,16 @@ package linter
 
 import (
 	"fmt"
+	"lint-service/internal/linters"
 	"lint-service/internal/models"
-	"lint-service/internal/services"
 	"sync"
 )
 
 type Service struct {
-	linter []services.Linter
+	linter []linters.Linter
 }
 
-func NewClient(linter []services.Linter) *Service {
+func NewClient(linter []linters.Linter) *Service {
 	return &Service{
 		linter: linter,
 	}
@@ -30,12 +30,11 @@ func (s *Service) LintCode(sourceFile models.SourceFile) ([]models.LintResult, e
 		linter := linter
 		go func() {
 			defer wg.Done()
-			currentLint, err := linter.LintFile(sourceFile)
+			var err error
+			lintResult[i], err = linter.LintFile(sourceFile)
 			if err != nil {
 				fmt.Println(err)
-				return
 			}
-			lintResult[i] = currentLint
 		}()
 	}
 

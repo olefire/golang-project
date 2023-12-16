@@ -1,10 +1,10 @@
 package linter
 
 import (
+	"lint-service/internal/linters"
 	"lint-service/internal/linters/python/metrics"
 	"lint-service/internal/linters/python/pylint"
 	"lint-service/internal/models"
-	"lint-service/internal/services"
 	"os"
 	"path"
 	"testing"
@@ -14,9 +14,9 @@ func TestService_GetMetrics(t *testing.T) {
 	pyLint := pylint.Linter{}
 	pyMetrics := metrics.Linter{}
 
-	linters := []services.Linter{&pyLint, &pyMetrics}
+	lintrs := []linters.Linter{&pyLint, &pyMetrics}
 
-	linterService := NewClient(linters)
+	linterService := NewClient(lintrs)
 
 	projectRoot := "../../.."
 	fpath := path.Join(projectRoot, "code/test_file.py")

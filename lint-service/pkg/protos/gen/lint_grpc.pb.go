@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LintingServiceClient interface {
-	LintCode(ctx context.Context, in *Code, opts ...grpc.CallOption) (*LintResult, error)
+	LintCode(ctx context.Context, in *File, opts ...grpc.CallOption) (*LintResults, error)
 }
 
 type lintingServiceClient struct {
@@ -33,8 +33,8 @@ func NewLintingServiceClient(cc grpc.ClientConnInterface) LintingServiceClient {
 	return &lintingServiceClient{cc}
 }
 
-func (c *lintingServiceClient) LintCode(ctx context.Context, in *Code, opts ...grpc.CallOption) (*LintResult, error) {
-	out := new(LintResult)
+func (c *lintingServiceClient) LintCode(ctx context.Context, in *File, opts ...grpc.CallOption) (*LintResults, error) {
+	out := new(LintResults)
 	err := c.cc.Invoke(ctx, "/proto.LintingService/LintCode", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (c *lintingServiceClient) LintCode(ctx context.Context, in *Code, opts ...g
 // All implementations must embed UnimplementedLintingServiceServer
 // for forward compatibility
 type LintingServiceServer interface {
-	LintCode(context.Context, *Code) (*LintResult, error)
+	LintCode(context.Context, *File) (*LintResults, error)
 	mustEmbedUnimplementedLintingServiceServer()
 }
 
@@ -54,7 +54,7 @@ type LintingServiceServer interface {
 type UnimplementedLintingServiceServer struct {
 }
 
-func (UnimplementedLintingServiceServer) LintCode(context.Context, *Code) (*LintResult, error) {
+func (UnimplementedLintingServiceServer) LintCode(context.Context, *File) (*LintResults, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LintCode not implemented")
 }
 func (UnimplementedLintingServiceServer) mustEmbedUnimplementedLintingServiceServer() {}
@@ -71,7 +71,7 @@ func RegisterLintingServiceServer(s grpc.ServiceRegistrar, srv LintingServiceSer
 }
 
 func _LintingService_LintCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Code)
+	in := new(File)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func _LintingService_LintCode_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/proto.LintingService/LintCode",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LintingServiceServer).LintCode(ctx, req.(*Code))
+		return srv.(LintingServiceServer).LintCode(ctx, req.(*File))
 	}
 	return interceptor(ctx, in, info, handler)
 }
