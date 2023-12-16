@@ -2,7 +2,6 @@ package pylint
 
 import (
 	"lint-service/internal/models"
-	"lint-service/internal/services/linter"
 	"os"
 	"path"
 	"testing"
@@ -20,7 +19,7 @@ func TestService_LintCode(t *testing.T) {
 
 	file := models.SourceFile{
 		Code:     string(content),
-		Language: linter.Python,
+		Language: models.Python,
 	}
 
 	issues, err := pyLint.LintFile(file)

@@ -17,10 +17,18 @@ func Execute(code string, name string, arg ...string) (stdout string, stderr str
 	if err != nil {
 		return "", "", err
 	}
-
+	//todo handle errors
 	go func() {
-		defer pipe.Close()
-		io.WriteString(pipe, code)
+		defer func(pipe io.WriteCloser) {
+			err := pipe.Close()
+			if err != nil {
+
+			}
+		}(pipe)
+		_, err := io.WriteString(pipe, code)
+		if err != nil {
+			return
+		}
 	}()
 
 	// Substitute process stderr/stdout buffers

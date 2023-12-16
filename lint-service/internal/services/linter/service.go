@@ -7,10 +7,6 @@ import (
 	"sync"
 )
 
-var (
-	Python models.ProgrammingLanguage = "python"
-)
-
 type Service struct {
 	linter []services.Linter
 }
@@ -21,6 +17,7 @@ func NewClient(linter []services.Linter) *Service {
 	}
 }
 
+// LintCode todo handle errors
 func (s *Service) LintCode(sourceFile models.SourceFile) ([]models.LintResult, error) {
 	lintNumbers := len(s.linter)
 	lintResult := make([]models.LintResult, lintNumbers)

@@ -16,8 +16,7 @@ type Metrics struct {
 }
 
 var (
-	Python models.ProgrammingLanguage = "python"
-	Radon  models.Linter              = "Radon"
+	Radon models.Linter = "Radon"
 )
 
 type Linter struct{}
@@ -31,7 +30,7 @@ func (l *Linter) LintFile(file models.SourceFile) (models.LintResult, error) {
 	}
 
 	if err != nil {
-		return models.LintResult{}, err
+		return models.LintResult{Linter: Radon}, err
 	}
 
 	var data map[string][]Metrics
@@ -39,11 +38,12 @@ func (l *Linter) LintFile(file models.SourceFile) (models.LintResult, error) {
 	err = json.Unmarshal([]byte(content), &data)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return models.LintResult{}, err
+		return models.LintResult{Linter: Radon}, err
 	}
-	issues := make([]models.LintCodeIssue, len(data["-"]))
+	lintRes := data["-"]
+	issues := make([]models.LintCodeIssue, len(lintRes))
 
-	for i, metric := range data["-"] {
+	for i, metric := range lintRes {
 		issues[i].Message = fmt.Sprintf("Cyclomatic complexity of %s %s is : %d. Сode quality assessment: %s ", metric.Type, metric.Name, metric.Complexity, metric.Rank)
 		issues[i].Line = metric.Lineno
 	}

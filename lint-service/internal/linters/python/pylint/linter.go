@@ -10,7 +10,7 @@ import (
 type Linter struct{}
 
 var (
-	Pylint models.Linter = "Pylint"
+	Pylint models.Linter = "pylint"
 )
 
 func (l *Linter) LintFile(file models.SourceFile) (models.LintResult, error) {
@@ -23,13 +23,13 @@ func (l *Linter) LintFile(file models.SourceFile) (models.LintResult, error) {
 	}
 
 	if err != nil {
-		return models.LintResult{}, err
+		return models.LintResult{Linter: Pylint}, err
 	}
 
 	var issues []models.LintCodeIssue
 	err = json.Unmarshal([]byte(content), &issues)
 	if err != nil {
-		return models.LintResult{}, err
+		return models.LintResult{Linter: Pylint}, err
 	}
 
 	return models.LintResult{Issues: issues, Linter: Pylint}, nil

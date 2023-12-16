@@ -20,7 +20,7 @@ func TestService_GetMetrics(t *testing.T) {
 
 	file := models.SourceFile{
 		Code:     string(content),
-		Language: Python,
+		Language: models.Python,
 	}
 
 	issues, err := metric.LintFile(file)
