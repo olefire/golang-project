@@ -3,10 +3,10 @@ package main
 import (
 	"github.com/rs/cors"
 	"lint-service/internal/controller"
+	"lint-service/internal/linters/python/metrics"
+	"lint-service/internal/linters/python/pylint"
 	"lint-service/internal/services"
 	"lint-service/internal/services/linter"
-	"lint-service/internal/services/metrics"
-	"lint-service/internal/services/pylint"
 	"log"
 	"net/http"
 )
@@ -18,6 +18,7 @@ func main() {
 	linters := []services.Linter{&pyLint, &pyMetrics}
 
 	linterService := linter.NewClient(linters)
+
 	ctr := controller.NewController(controller.LinterService{Service: linterService})
 
 	router := ctr.NewRouter()

@@ -1,8 +1,10 @@
 package linter
 
 import (
+	"fmt"
 	"lint-service/internal/models"
 	"lint-service/internal/services"
+	"sync"
 )
 
 var (
@@ -20,15 +22,27 @@ func NewClient(linter []services.Linter) *Service {
 }
 
 func (s *Service) LintCode(sourceFile models.SourceFile) ([]models.LintResult, error) {
-	var lintResult []models.LintResult
-	for _, linter := range s.linter {
-		issues, err := linter.LintFile(sourceFile)
+	lintNumbers := len(s.linter)
+	lintResult := make([]models.LintResult, lintNumbers)
 
-		if err != nil {
-			return []models.LintResult{}, err
-		}
+	var wg sync.WaitGroup
+	wg.Add(lintNumbers)
 
-		lintResult = append(lintResult, issues)
+	for i, linter := range s.linter {
+		i := i
+		linter := linter
+		go func() {
+			defer wg.Done()
+			currentLint, err := linter.LintFile(sourceFile)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			lintResult[i] = currentLint
+		}()
 	}
+
+	wg.Wait()
+
 	return lintResult, nil
 }

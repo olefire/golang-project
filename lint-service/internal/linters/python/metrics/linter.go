@@ -19,6 +19,7 @@ type Metrics struct {
 
 var (
 	Python models.ProgrammingLanguage = "python"
+	Radon  models.Linter              = "Radon"
 )
 
 type Linter struct{}
@@ -68,5 +69,5 @@ func (l *Linter) LintFile(file models.SourceFile) (models.LintResult, error) {
 		issues[i].Line = metric.Lineno
 	}
 
-	return models.LintResult{Issues: issues}, nil
+	return models.LintResult{Issues: issues, Linter: Radon}, nil
 }

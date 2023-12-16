@@ -2,13 +2,13 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "lint-service/protos/gen";
+option go_package = "/gen";
 
-service UserService {
-  rpc LintCode(Lint) returns (LintResult) {}
+service LintingService {
+  rpc LintCode(Code) returns (LintResult) {}
 }
 
-message Lint {
+message Code {
   string code = 1;
 }
 

@@ -11,6 +11,10 @@ import (
 
 type Linter struct{}
 
+var (
+	Pylint models.Linter = "Pylint"
+)
+
 func (l *Linter) LintFile(file models.SourceFile) (models.LintResult, error) {
 	cmd := exec.Command("pylint",
 		"-f", "json",
@@ -49,5 +53,5 @@ func (l *Linter) LintFile(file models.SourceFile) (models.LintResult, error) {
 		return models.LintResult{}, err
 	}
 
-	return models.LintResult{Issues: issues}, nil
+	return models.LintResult{Issues: issues, Linter: Pylint}, nil
 }

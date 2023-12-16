@@ -1,10 +1,10 @@
 package linter
 
 import (
+	"lint-service/internal/linters/python/metrics"
+	"lint-service/internal/linters/python/pylint"
 	"lint-service/internal/models"
 	"lint-service/internal/services"
-	"lint-service/internal/services/metrics"
-	"lint-service/internal/services/pylint"
 	"os"
 	"path"
 	"testing"
