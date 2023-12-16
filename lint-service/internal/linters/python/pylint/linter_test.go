@@ -11,7 +11,7 @@ import (
 var pyLint = Linter{}
 
 func TestService_LintCode(t *testing.T) {
-	projectRoot := "../../.."
+	projectRoot := "../../../.."
 	fpath := path.Join(projectRoot, "code/test_file.py")
 	content, err := os.ReadFile(fpath)
 	if err != nil {

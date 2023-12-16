@@ -11,7 +11,7 @@ var metric = Linter{}
 
 func TestService_GetMetrics(t *testing.T) {
 
-	projectRoot := "../../.."
+	projectRoot := "../../../.."
 	fpath := path.Join(projectRoot, "code/test_file.py")
 	content, err := os.ReadFile(fpath)
 	if err != nil {

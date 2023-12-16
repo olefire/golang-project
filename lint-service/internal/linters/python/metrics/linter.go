@@ -1,12 +1,10 @@
 package metrics
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"lint-service/internal/models"
-	"os/exec"
+	"lint-service/pkg"
 )
 
 type Metrics struct {
@@ -25,39 +23,20 @@ var (
 type Linter struct{}
 
 func (l *Linter) LintFile(file models.SourceFile) (models.LintResult, error) {
-	cmd := exec.Command("radon",
-		"cc", "-j", "-",
-	)
 
-	pipe, err := cmd.StdinPipe()
+	content, stderr, err := pkg.Execute(file.Code, "radon", "cc", "-j", "-")
+
+	if stderr != "" {
+		fmt.Printf("lintFile stderr: %s\n", stderr)
+	}
+
 	if err != nil {
-		return models.LintResult{}, err
-	}
-
-	_, err = pipe.Write([]byte(file.Code))
-	if err != nil {
-		return models.LintResult{}, err
-	}
-
-	if err = pipe.Close(); err != nil {
-		return models.LintResult{}, err
-	}
-
-	// Substitute process stderr/stdout buffers
-	var outBuffer, errBuffer bytes.Buffer
-	cmd.Stdout = &outBuffer
-	cmd.Stderr = &errBuffer
-
-	err = cmd.Run()
-	var e *exec.ExitError
-	if err != nil && !errors.As(err, &e) {
-		fmt.Printf("unexpected error code: %s", err)
 		return models.LintResult{}, err
 	}
 
 	var data map[string][]Metrics
 
-	err = json.Unmarshal([]byte(outBuffer.String()), &data)
+	err = json.Unmarshal([]byte(content), &data)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return models.LintResult{}, err
