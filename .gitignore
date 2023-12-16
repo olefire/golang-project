@@ -1,2 +1,1 @@
-lint-service/go.mod
-lint-service/.idea
+lint-service/*.idea
