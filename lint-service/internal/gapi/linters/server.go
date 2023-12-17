@@ -4,7 +4,7 @@ import (
 	"context"
 	"lint-service/internal/models"
 	"lint-service/internal/services"
-	gen2 "lint-service/pkg/protos/gen"
+	"lint-service/pkg/protos/gen"
 )
 
 type LintingService struct {
@@ -12,7 +12,7 @@ type LintingService struct {
 }
 
 type Server struct {
-	gen2.UnimplementedLintingServiceServer
+	gen.UnimplementedLintingServiceServer
 	LintingService
 }
 
@@ -22,22 +22,22 @@ func NewGrpcServer(ls LintingService) *Server {
 	}
 }
 
-func (s *Server) LintCode(_ context.Context, file *gen2.File) (*gen2.LintResults, error) {
+func (s *Server) LintCode(_ context.Context, file *gen.File) (*gen.LintResults, error) {
 	sourceFile := models.SourceFile{Code: file.GetCode(), Language: models.ProgrammingLanguage(file.GetLanguage())}
 	lintCode, err := s.LintingService.LintCode(sourceFile)
 	if err != nil {
 		return nil, err
 	}
 
-	var lintResults gen2.LintResults
+	var lintResults gen.LintResults
 
 	for _, result := range lintCode {
-		var lintResult gen2.LintResult
+		var lintResult gen.LintResult
 		for _, issue := range result.Issues {
-			lintResult.Result = append(lintResult.Result, &gen2.LintCodeIssue{Line: int32(issue.Line), Message: issue.Message})
+			lintResult.Result = append(lintResult.Result, &gen.LintCodeIssue{Line: int32(issue.Line), Message: issue.Message})
 		}
+		lintResult.Linter = string(result.Linter)
 		lintResults.Results = append(lintResults.Results, &lintResult)
-		lintResults.Linter = string(result.Linter)
 	}
 
 	return &lintResults, nil

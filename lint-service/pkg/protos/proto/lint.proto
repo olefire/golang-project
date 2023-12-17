@@ -20,11 +20,11 @@ message LintCodeIssue {
 
 message LintResult {
   repeated LintCodeIssue result = 1;
+  string Linter = 2;
 }
 
 message LintResults {
   repeated LintResult results = 1;
-  string Linter = 2;
 }
 
 //protoc -I proto protos/proto/lint.proto --go_out=./gen/go/ --go_opt=paths=source_relative --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
