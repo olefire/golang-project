@@ -21,7 +21,6 @@ func main() {
 	pyMetrics := metrics.Linter{}
 
 	l := []linters.Linter{&pyLint, &pyMetrics}
-
 	linterService = linter.NewClient(l)
 
 	startGrpcServer()
@@ -29,7 +28,6 @@ func main() {
 
 func startGrpcServer() {
 	linterServer := gapi.NewGrpcServer(gapi.LintingService{LinterManagement: linterService})
-
 	grpcServer := grpc.NewServer()
 
 	gen.RegisterLintingServiceServer(grpcServer, linterServer)
