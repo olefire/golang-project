@@ -95,3 +95,29 @@ func SuccessfulCreation(id string, w http.ResponseWriter) {
 		http.Error(w, err.Error(), http.StatusTeapot)
 	}
 }
+
+func SuccessLogin(token string, w http.ResponseWriter) {
+	payload := errData[string]{
+		Data:       token,
+		StatusCode: http.StatusOK,
+		Message:    "success",
+	}
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func SuccessLogout(w http.ResponseWriter) {
+	payload := struct {
+		Status string `json:"status"`
+	}{Status: "success"}
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}

@@ -7,7 +7,7 @@ import (
 )
 
 type Repository interface {
-	CreateUser(ctx context.Context, user *models.User) (string, error)
+	FindUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUsers(ctx context.Context) ([]models.User, error)
 	GetUser(ctx context.Context, id string) (*models.User, error)
 	DeleteUser(ctx context.Context, id string) error
@@ -27,13 +27,12 @@ func NewService(d Deps) *Service {
 	}
 }
 
-func (s *Service) CreateUser(ctx context.Context, user *models.User) (string, error) {
-	insertedId, err := s.UserRepo.CreateUser(ctx, user)
+func (s *Service) FindUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	user, err := s.UserRepo.FindUserByEmail(ctx, email)
 	if err != nil {
-		return "", fmt.Errorf("can`t create user: %w", err)
+		return nil, fmt.Errorf("can`t get user: %w", err)
 	}
-
-	return insertedId, err
+	return user, err
 }
 
 func (s *Service) GetUsers(ctx context.Context) ([]models.User, error) {

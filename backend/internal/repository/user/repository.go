@@ -22,6 +22,19 @@ func NewUserRepository(col *mongo.Collection) *UserRepository {
 	}
 }
 
+func (ur *UserRepository) FindUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	var user *models.User
+
+	query := bson.M{"email": email}
+	err := ur.collection.FindOne(ctx, query).Decode(&user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (ur *UserRepository) CreateUser(c context.Context, user *models.User) (string, error) {
 	result, err := ur.collection.InsertOne(c, user)
 	if err != nil {

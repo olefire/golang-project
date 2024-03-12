@@ -4,6 +4,7 @@ import (
 	"backend/internal/models"
 	PasteService "backend/internal/services/paste"
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,8 +23,8 @@ func NewPasteRepository(col *mongo.Collection) *PasteRepository {
 	}
 }
 
-func (ur *PasteRepository) CreatePaste(ctx context.Context, paste *models.Paste) (string, error) {
-	result, err := ur.collection.InsertOne(ctx, paste)
+func (pr *PasteRepository) CreatePaste(ctx context.Context, paste *models.Paste) (string, error) {
+	result, err := pr.collection.InsertOne(ctx, paste)
 	if err != nil {
 		return "", err
 	}
@@ -32,9 +33,9 @@ func (ur *PasteRepository) CreatePaste(ctx context.Context, paste *models.Paste)
 	return id, err
 }
 
-func (ur *PasteRepository) GetBatch(ctx context.Context) ([]models.Paste, error) {
+func (pr *PasteRepository) GetBatch(ctx context.Context) ([]models.Paste, error) {
 	opts := options.Find()
-	cursor, err := ur.collection.Find(ctx, bson.D{}, opts)
+	cursor, err := pr.collection.Find(ctx, bson.D{}, opts)
 
 	if err != nil {
 		return nil, err
@@ -51,7 +52,7 @@ func (ur *PasteRepository) GetBatch(ctx context.Context) ([]models.Paste, error)
 	return batch, err
 }
 
-func (ur *PasteRepository) GetPasteById(ctx context.Context, id string) (*models.Paste, error) {
+func (pr *PasteRepository) GetPasteById(ctx context.Context, id string) (*models.Paste, error) {
 	var paste models.Paste
 
 	_id, err := primitive.ObjectIDFromHex(id)
@@ -59,20 +60,40 @@ func (ur *PasteRepository) GetPasteById(ctx context.Context, id string) (*models
 		return nil, err
 	}
 
-	err = ur.collection.FindOne(ctx, bson.M{"_id": _id}).Decode(&paste)
+	err = pr.collection.FindOne(ctx, bson.M{"_id": _id}).Decode(&paste)
 	return &paste, err
 }
 
-func (ur *PasteRepository) DeletePaste(ctx context.Context, id string) error {
+func (pr *PasteRepository) DeletePaste(ctx context.Context, id string) error {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
 
-	_, err = ur.collection.DeleteOne(ctx, bson.M{"_id": _id})
+	_, err = pr.collection.DeleteOne(ctx, bson.M{"_id": _id})
 	if err != nil {
 		return err
 	}
 
 	return err
+}
+
+func (pr *PasteRepository) UpdatePaste(ctx context.Context, id string, upd *models.UpdatePaste) (*models.Paste, error) {
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	query := bson.D{{Key: "_id", Value: _id}}
+	update := bson.D{{Key: "$set", Value: upd}}
+
+	res := pr.collection.FindOneAndUpdate(ctx, query, update)
+
+	var updatedPaste *models.Paste
+
+	if err := res.Decode(&updatedPaste); err != nil {
+		return nil, errors.New("no paste with that Id exists")
+	}
+
+	return updatedPaste, err
 }

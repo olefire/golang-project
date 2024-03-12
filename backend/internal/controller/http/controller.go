@@ -1,11 +1,20 @@
 package http
 
 import (
+	"backend/internal/config"
 	"backend/internal/models"
+	"backend/internal/models/linter"
 	"backend/internal/services"
-	"encoding/json"
-	"github.com/gorilla/mux"
+	utils "backend/internal/utils/auth"
+	"errors"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"io"
 	"net/http"
+	"strings"
+	"time"
 )
 
 type UserService struct {
@@ -16,168 +25,271 @@ type PasteService struct {
 	services.PasteManagement
 }
 
+type LinterService struct {
+	services.Linter
+}
+
+type AuthService struct {
+	services.AuthManagement
+}
+
 type Controller struct {
 	UserService
 	PasteService
+	LinterService
+	AuthService
 }
 
-func NewController(us UserService, ps PasteService) *Controller {
+func NewController(us UserService, ps PasteService, ls LinterService, as AuthService) *Controller {
 	return &Controller{
-		UserService:  us,
-		PasteService: ps,
+		UserService:   us,
+		PasteService:  ps,
+		LinterService: ls,
+		AuthService:   as,
 	}
 }
 
-func (ctr *Controller) CreateUserEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (ctr *Controller) SignUpUserEndpoint(ctx *gin.Context) {
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+	var user *models.User
+	if err := ctx.ShouldBindJSON(&user); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+	id, err := ctr.SignUpUser(ctx, user)
 
-	var req models.User
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	id, err := ctr.CreateUser(ctx, &req)
 	if err != nil {
-		http.Error(w, "can`t create user", http.StatusInternalServerError)
+		if strings.Contains(err.Error(), "email already exist") {
+			ctx.JSON(http.StatusConflict, gin.H{"status": "error", "message": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": "error", "message": err.Error()})
 		return
 	}
 
-	SuccessfulCreation(id, w)
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "message": "user successfully signed up", "id": id})
 }
 
-func (ctr *Controller) GetUsersEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+// SignInUserEndpoint todo remove config
+func (ctr *Controller) SignInUserEndpoint(ctx *gin.Context) {
+	var credentials *models.SignInInput
 
-	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+	if err := ctx.ShouldBindJSON(&credentials); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+
+	user, err := ctr.FindUserByEmail(ctx, credentials.Email)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email or password"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	if err := utils.VerifyPassword(user.Password, credentials.Password); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email or Password"})
+		return
+	}
+
+	cfg := config.NewConfig()
+
+	accessToken, err := utils.CreateToken(time.Hour*24*7, user.ID, cfg.AccessTokenPrivateKey)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	refreshToken, err := utils.CreateToken(time.Hour*24*7*30, user.ID, cfg.RefreshTokenPrivateKey)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	ctx.SetCookie("accessToken", accessToken, 30*24*60*60, "/", "localhost", false, true)
+	ctx.SetCookie("refreshToken", refreshToken, 30*24*60*60, "/", "localhost", false, true)
+	ctx.SetCookie("logged_in", "true", 30*24*60*60, "/", "localhost", false, false)
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "accessToken": accessToken})
+}
+
+func (ctr *Controller) LogoutUser(ctx *gin.Context) {
+	ctx.SetCookie("access_token", "", -1, "/", "localhost", false, true)
+	ctx.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
+	ctx.SetCookie("logged_in", "", -1, "/", "localhost", false, true)
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success"})
+}
+
+func (ctr *Controller) GetUsersEndpoint(ctx *gin.Context) {
 
 	users, err := ctr.GetUsers(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessUsersRespond(users, w)
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": users})
 }
 
-func (ctr *Controller) GetUserEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	ctx := r.Context()
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (ctr *Controller) GetUserEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
 
 	user, err := ctr.GetUser(ctx, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessUserRespond(user, w)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": user})
 }
 
-func (ctr *Controller) DeleteUserEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	ctx := r.Context()
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (ctr *Controller) DeleteUserEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
 
 	err := ctr.DeleteUser(ctx, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
 	}
 
-	SuccessDelete(id, w)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": fmt.Sprintf("deleted user id: %s", id), "id": id})
 }
 
-func (ctr *Controller) CreatePasteEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (ctr *Controller) CreatePasteEndpoint(ctx *gin.Context) {
+	currentUser := ctx.MustGet("currentUser")
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+	var paste *models.Paste
+
+	if err := ctx.ShouldBindJSON(&paste); err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	var req models.Paste
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	currentId, err := primitive.ObjectIDFromHex(fmt.Sprint(currentUser))
 
-	id, err := ctr.CreatePaste(ctx, &req)
 	if err != nil {
-		http.Error(w, "can`t create paste", http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessfulCreation(id, w)
+	paste.UserID = currentId
+
+	id, err := ctr.CreatePaste(ctx, paste)
+	if err != nil {
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": "fail", "message": paste, "id": currentId})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": id})
 }
 
-func (ctr *Controller) GetBatchEndpoint(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
+func (ctr *Controller) GetBatchEndpoint(ctx *gin.Context) {
 
 	batch, err := ctr.GetBatch(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessBatchRespond(batch, w)
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": batch})
 }
 
-func (ctr *Controller) GetPasteEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
-		return
-	}
+func (ctr *Controller) GetPasteEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
 
-	ctx := r.Context()
-	vars := mux.Vars(r)
-	id := vars["id"]
+	currentUserId := ctx.MustGet("currentUser")
+	curId := fmt.Sprint(currentUserId)
 
 	paste, err := ctr.GetPasteById(ctx, id)
+
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	SuccessPasteRespond(paste, w)
+	if paste.UserID.Hex() != curId {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "you don't have permission to access this resource"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": paste})
 }
 
-func (ctr *Controller) DeletePasteEndpoint(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "wrong http method", http.StatusMethodNotAllowed)
+func (ctr *Controller) DeletePasteEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	currentUserId := ctx.MustGet("currentUser")
+	curId := fmt.Sprint(currentUserId)
+
+	paste, err := ctr.GetPasteById(ctx, id)
+
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	ctx := r.Context()
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	err := ctr.DeletePaste(ctx, id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if paste.UserID.Hex() != curId {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "you don't have permission to access this resource"})
+		return
 	}
 
-	SuccessDelete(id, w)
+	err = ctr.DeletePaste(ctx, id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": fmt.Sprintf("deleted user id: %s", id), "id": id})
+}
+
+func (ctr *Controller) UpdatePasteEndpoint(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	var updPaste *models.UpdatePaste
+
+	if err := ctx.ShouldBindJSON(&updPaste); err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	paste, err := ctr.UpdatePaste(ctx, id, updPaste)
+
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"status": "fail", "message": err.Error()})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "updated paste": paste})
+}
+
+func (ctr *Controller) LintEndpoint(ctx *gin.Context) {
+	byteData, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	sourceFile := linter.SourceFile{Code: string(byteData), Language: "python"}
+
+	lintIssues, err := ctr.LintCode(sourceFile)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"LintResult": lintIssues})
+
+}
+
+func (ctr *Controller) GetMe(ctx *gin.Context) {
+	currentUserId := ctx.MustGet("currentUser")
+
+	user, err := ctr.GetUser(ctx, fmt.Sprint(currentUserId))
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": gin.H{"user": user}})
 }
